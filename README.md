@@ -2,6 +2,8 @@
 
 A web-based support portal that integrates with FreeScout (support ticketing system), providing a user-friendly form interface for submitting and tracking support requests.
 
+![Support Portal Screenshot](screenshot.png)
+
 ## Features
 
 - 🎫 **Create Multiple Request Types** - Onboarding, Problem, Change, Software Request, Access Request, and more
