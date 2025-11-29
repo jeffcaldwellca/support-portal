@@ -4,7 +4,7 @@ A web-based support portal that integrates with FreeScout (support ticketing sys
 
 ## Features
 
-- 🎫 **Multiple Request Types** - Onboarding, Problem, Change, Software Request, Access Request, and more
+- 🎫 **Create Multiple Request Types** - Onboarding, Problem, Change, Software Request, Access Request, and more
 - 🔐 **Flexible Authentication** - Supports LDAP/Active Directory and local authentication
 - 📝 **Dynamic Forms** - Conditional field logic based on request type
 - 📎 **File Attachments** - Upload files with ticket submissions
@@ -13,7 +13,7 @@ A web-based support portal that integrates with FreeScout (support ticketing sys
 - 📊 **Status Tracking** - Monitor ticket progress (Active, Pending, Closed) with automatic updates
 - 🎨 **Customizable Branding** - Configure company logo, colors, and portal name
 - 🔄 **Auto-save** - Automatic form data saving to prevent loss
-- 📧 **Email Notifications** - Automated email confirmations for ticket submissions
+
 
 ## Prerequisites
 
