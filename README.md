@@ -324,3 +324,14 @@ composer test
 ## Support
 
 - Review application logs in `logs/app.log`
+
+## Acknowledgments
+
+This project is built on top of [FreeScout](https://freescout.net/), an open-source help desk and shared inbox application. Good work, team!
+
+- **FreeScout Website:** [https://freescout.net/](https://freescout.net/)
+- **FreeScout GitHub:** [https://github.com/freescout-helpdesk/freescout](https://github.com/freescout-helpdesk/freescout)
+
+## License
+
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
