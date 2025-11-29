@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Error - IT Helpdesk{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="text-center">
+                <i class="bi bi-exclamation-triangle text-warning" style="font-size: 4rem;"></i>
+                
+                <h2 class="mt-4 mb-3">Something went wrong</h2>
+                
+                <div class="alert alert-danger">
+                    <strong>Error:</strong> {{ error }}
+                </div>
+                
+                <p class="text-muted mb-4">
+                    We apologize for the inconvenience. Please try again or contact IT support if the problem persists.
+                </p>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="/" class="btn btn-primary">
+                        <i class="bi bi-house me-2"></i>
+                        Return Home
+                    </a>
+                    
+                    <button type="button" class="btn btn-outline-secondary" onclick="history.back()">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Go Back
+                    </button>
+                </div>
+                
+                <hr class="my-4">
+                
+                <div class="text-start">
+                    <h6>Need immediate help?</h6>
+                    <ul class="list-unstyled small text-muted">
+                        <li><i class="bi bi-envelope me-2"></i>Email: {{ branding.support_email }}</li>
+                        <li><i class="bi bi-telephone me-2"></i>Phone: {{ branding.support_phone }}</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

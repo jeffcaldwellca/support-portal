@@ -1,0 +1,25 @@
+<div class="form-group">
+    <label for="{{ field.name }}" class="form-label">
+        {{ field.label }}
+        {% if field.required|default(false) %}
+            <span class="text-danger">*</span>
+        {% endif %}
+    </label>
+    
+    <input 
+        type="date" 
+        class="form-control" 
+        id="{{ field.name }}" 
+        name="{{ field.name }}" 
+        {% if field.required|default(false) %}required{% endif %}
+        {% if autosaved_data[field.name]|default('') %}
+            value="{{ autosaved_data[field.name] }}"
+        {% elseif field.default|default('') %}
+            value="{{ field.default }}"
+        {% endif %}
+    >
+    
+    <div class="invalid-feedback">
+        Please select a valid date.
+    </div>
+</div>

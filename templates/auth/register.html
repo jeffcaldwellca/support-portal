@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        {% if branding.use_logo|default(true) %}
+                            <img src="/assets/img/logo.png" alt="{{ branding.company_name }}" style="max-width: 120px; height: auto;" class="mb-3" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <i class="{{ branding.brand_icon }} text-primary" style="font-size: 3rem; display:none;"></i>
+                        {% else %}
+                            <i class="{{ branding.brand_icon }} text-primary" style="font-size: 3rem;"></i>
+                        {% endif %}
+                        <h3 class="mt-3 mb-0">Create Local Account</h3>
+                        <p class="text-muted">{{ branding.company_name }}</p>
+                    </div>
+                    
+                    {% if error %}
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        {% if error == 'missing_fields' %}
+                            Please fill in all required fields.
+                        {% elseif error == 'password_mismatch' %}
+                            Passwords do not match. Please try again.
+                        {% elseif error == 'password_too_short' %}
+                            Password must be at least 8 characters long.
+                        {% elseif error == 'username_exists' %}
+                            Username already exists. Please choose a different username.
+                        {% elseif error == 'email_exists' %}
+                            Email already exists. Please use a different email address.
+                        {% elseif error == 'invalid_email' %}
+                            Invalid email format. Please enter a valid email address.
+                        {% elseif error == 'system_error' %}
+                            A system error occurred. Please try again later.
+                        {% elseif error == 'registration_disabled' %}
+                            Local account registration is currently disabled.
+                        {% else %}
+                            Registration failed. Please try again.
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if success %}
+                    <div class="alert alert-success" role="alert">
+                        <i class="bi bi-check-circle me-2"></i>
+                        Account created successfully! You can now <a href="/auth/login" class="alert-link">sign in</a>.
+                    </div>
+                    {% else %}
+                    
+                    <form method="post" action="/auth/register" class="needs-validation" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">
+                                    <i class="bi bi-person me-1"></i>
+                                    Username <span class="text-danger">*</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="username" 
+                                    name="username" 
+                                    required 
+                                    autocomplete="username"
+                                    placeholder="Choose a username"
+                                    pattern="[a-zA-Z0-9._-]{3,}"
+                                    title="At least 3 characters, letters, numbers, dots, underscores, and hyphens only"
+                                    value="{{ old.username|default('') }}"
+                                >
+                                <div class="invalid-feedback">
+                                    Please enter a valid username (at least 3 characters).
+                                </div>
+                                <small class="text-muted">At least 3 characters, letters and numbers only</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">
+                                    <i class="bi bi-envelope me-1"></i>
+                                    Email Address <span class="text-danger">*</span>
+                                </label>
+                                <input 
+                                    type="email" 
+                                    class="form-control" 
+                                    id="email" 
+                                    name="email" 
+                                    required 
+                                    autocomplete="email"
+                                    placeholder="your.email@example.com"
+                                    value="{{ old.email|default('') }}"
+                                >
+                                <div class="invalid-feedback">
+                                    Please enter a valid email address.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                <i class="bi bi-person-badge me-1"></i>
+                                Full Name <span class="text-danger">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="name" 
+                                name="name" 
+                                required 
+                                autocomplete="name"
+                                placeholder="Enter your full name"
+                                value="{{ old.name|default('') }}"
+                            >
+                            <div class="invalid-feedback">
+                                Please enter your full name.
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="department" class="form-label">
+                                    <i class="bi bi-building me-1"></i>
+                                    Department
+                                </label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="department" 
+                                    name="department" 
+                                    autocomplete="organization"
+                                    placeholder="e.g., IT, Sales, Marketing"
+                                    value="{{ old.department|default('') }}"
+                                >
+                                <small class="text-muted">Optional</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="title" class="form-label">
+                                    <i class="bi bi-briefcase me-1"></i>
+                                    Job Title
+                                </label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="title" 
+                                    name="title" 
+                                    autocomplete="organization-title"
+                                    placeholder="e.g., Software Engineer"
+                                    value="{{ old.title|default('') }}"
+                                >
+                                <small class="text-muted">Optional</small>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="password" class="form-label">
+                                    <i class="bi bi-lock me-1"></i>
+                                    Password <span class="text-danger">*</span>
+                                </label>
+                                <input 
+                                    type="password" 
+                                    class="form-control" 
+                                    id="password" 
+                                    name="password" 
+                                    required 
+                                    autocomplete="new-password"
+                                    placeholder="Enter a password"
+                                    minlength="8"
+                                >
+                                <div class="invalid-feedback">
+                                    Password must be at least 8 characters.
+                                </div>
+                                <small class="text-muted">Minimum 8 characters</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="password_confirm" class="form-label">
+                                    <i class="bi bi-lock-fill me-1"></i>
+                                    Confirm Password <span class="text-danger">*</span>
+                                </label>
+                                <input 
+                                    type="password" 
+                                    class="form-control" 
+                                    id="password_confirm" 
+                                    name="password_confirm" 
+                                    required 
+                                    autocomplete="new-password"
+                                    placeholder="Re-enter password"
+                                    minlength="8"
+                                >
+                                <div class="invalid-feedback">
+                                    Please confirm your password.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Note:</strong> This creates a local account for this helpdesk system only. 
+                            It is separate from your corporate LDAP/SSO account.
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="bi bi-person-plus me-2"></i>
+                            Create Account
+                        </button>
+                    </form>
+                    
+                    {% endif %}
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <small class="text-muted">
+                            Already have an account? 
+                            <a href="/auth/login" class="text-decoration-none">Sign in here</a>
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Bootstrap form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Password confirmation validation
+document.getElementById('password_confirm').addEventListener('input', function() {
+    var password = document.getElementById('password').value;
+    var confirm = this.value;
+    
+    if (password !== confirm) {
+        this.setCustomValidity('Passwords do not match');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+document.getElementById('password').addEventListener('input', function() {
+    var password = this.value;
+    var confirm = document.getElementById('password_confirm').value;
+    
+    if (confirm && password !== confirm) {
+        document.getElementById('password_confirm').setCustomValidity('Passwords do not match');
+    } else {
+        document.getElementById('password_confirm').setCustomValidity('');
+    }
+});
+
+// Auto-focus username field
+document.getElementById('username').focus();
+</script>
+{% endblock %}

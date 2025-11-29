@@ -1,0 +1,563 @@
+# Support Portal Decision Matrix
+# This configuration defines which fields appear for each request type
+#
+# Field Configuration Options:
+# - name: Unique field identifier (required)
+# - label: Display label for the field (required)
+# - type: Field type (text, email, select, checkbox_group, date, file, textarea) (required)
+# - required: Whether field is required (true/false)
+# - validation: Server-side validation rules (optional)
+# - placeholder: Text shown in empty fields (optional)
+# - default: Default value/selection for the field (optional)
+#   - For text/email/textarea: string value
+#   - For select: value that matches one of the options
+#   - For checkbox_group: array of values matching options
+#   - For date: date string in YYYY-MM-DD format
+#
+# FreeScout Integration Options:
+# - freescout_field: Name of the FreeScout custom field to map to (optional, field level)
+#   - If set, the field value will be sent to FreeScout as a custom field
+#   - Must match the custom field name EXACTLY as defined in FreeScout (case-sensitive)
+#   - Custom field must exist in FreeScout and be assigned to the mailbox
+# - include_in_body: Whether to include this field in the ticket body (true/false, default: true)
+#   - Set to false if the field is already shown elsewhere (metadata, custom field, subject)
+#   - Common fields to exclude: requester_name, requester_email, priority, request_type, subject
+# - freescout_tags: Array of tags to apply to tickets (optional, request type level)
+#   - Define at the request type level (not on individual fields)
+#   - Tags help with filtering and categorization in FreeScout
+#   - Use lowercase, no spaces (use hyphens for multi-word tags)
+#   - Tags will be auto-created in FreeScout if they don't exist
+#   - Example: freescout_tags: ["technical-issue", "incident"]
+# - freescout_tags: Array of tags to apply to tickets (request type level only)
+#   - Tags help with filtering and categorization in FreeScout
+#   - Use lowercase, no spaces (use hyphens)
+#   - Tags will be auto-created in FreeScout if they don't exist
+#
+# FreeScout Field Priority:
+# 1. If freescout_field is set, value goes to that custom field
+# 2. If include_in_body is true, value also/instead appears in ticket body
+# 3. If include_in_body is false and no freescout_field, value is stored but not shown in ticket
+#
+# Priority Order:
+# 1. Autosaved data (if user has saved draft)
+# 2. LDAP user data (for requester_name and requester_email)
+# 3. Default value from YAML (if specified)
+# 4. Placeholder (shown as hint text)
+#
+# Important Notes:
+# 1. Custom field names must match EXACTLY in FreeScout (case-sensitive)
+# 2. For dropdown custom fields, the form option labels must match the FreeScout
+#    dropdown options (case-insensitive matching is performed)
+# 3. Custom fields must be created in FreeScout first via Admin > Settings > Custom Fields
+# 4. The custom fields must be assigned to the mailbox being used
+
+form_fields:
+  # Common fields that appear on all forms
+  common:
+    - name: "requester_name"
+      label: "Your Name"
+      type: "text"
+      required: true
+      validation: "string|max:255"
+      include_in_body: false  # Already in ticket metadata
+    
+    - name: "requester_email"
+      label: "Your Email"
+      type: "email"
+      required: true
+      validation: "email"
+      include_in_body: false  # Already in ticket metadata
+    
+    - name: "subject"
+      label: "Subject / Short Description"
+      type: "text"
+      required: true
+      placeholder: "Brief summary of your request"
+      validation: "string|max:255"
+      include_in_body: false  # Used as ticket subject
+    
+    - name: "priority"
+      label: "Priority"
+      type: "select"
+      required: true
+      placeholder: "Select priority level..."
+      default: "medium"
+      freescout_field: "Priority"  # Maps to FreeScout custom field
+      include_in_body: false  # Already in custom field
+      options:
+        - value: "low"
+          label: "Low - Not urgent"
+        - value: "medium"
+          label: "Medium - Standard request"
+        - value: "high"
+          label: "High - Urgent"
+        - value: "critical"
+          label: "Critical - Production issue"
+
+  # Request type specific fields
+  request_types:
+    onboarding:
+      label: "New Employee Onboarding"
+      description: "Set up new employee access and equipment"
+      icon: "bi-person-plus"
+      color: "success"
+      fields:
+        - name: "employee_name"
+          label: "New Employee Name"
+          type: "text"
+          required: true
+          validation: "string|max:255"
+        
+        - name: "start_date"
+          label: "Start Date"
+          type: "date"
+          required: true
+          validation: "date|after:today"
+        
+        - name: "manager_name"
+          label: "Manager Name"
+          type: "text"
+          required: true
+          validation: "string|max:255"
+        
+        - name: "manager_email"
+          label: "Manager Email"
+          type: "email"
+          required: true
+          validation: "email"
+        
+        - name: "position_title"
+          label: "Position Title"
+          type: "text"
+          required: true
+          validation: "string|max:255"
+        
+        - name: "equipment_required"
+          label: "Equipment Required"
+          type: "checkbox_group"
+          required: false
+          options:
+            - "Laptop"
+            - "Desktop"
+            - "Monitor"
+            - "Phone"
+            - "Mobile Device"
+            - "Printer Access"
+        
+        - name: "software_required"
+          label: "Software Required"
+          type: "textarea"
+          required: false
+          placeholder: "List any specific software applications needed"
+          validation: "string|max:1000"
+        
+        - name: "access_requirements"
+          label: "System Access Requirements"
+          type: "textarea"
+          required: false
+          placeholder: "List systems, folders, or databases the employee needs access to"
+          validation: "string|max:1000"
+
+    problem:
+      label: "Technical Problem"
+      description: "Report technical issues or problems"
+      icon: "bi-exclamation-triangle"
+      color: "warning"
+      freescout_tags: ["technical-issue", "incident"]
+      fields:
+        - name: "device_type"
+          label: "Device Type"
+          type: "select"
+          required: true
+          options:
+            - "Laptop"
+            - "Desktop"
+            - "Phone"
+            - "Tablet"
+            - "Printer"
+            - "Server"
+            - "Network Equipment"
+            - "Other"
+          triggers:
+            - condition: "value == 'Laptop' || value == 'Desktop'"
+              show_fields: ["asset_tag", "operating_system"]
+        
+        - name: "asset_tag"
+          label: "Asset Tag Number"
+          type: "text"
+          required: false
+          validation: "string|max:50"
+          conditional: true
+        
+        - name: "operating_system"
+          label: "Operating System"
+          type: "select"
+          required: false
+          options:
+            - "Windows 10"
+            - "Windows 11"
+            - "macOS"
+            - "Linux"
+          conditional: true
+        
+        - name: "problem_description"
+          label: "Problem Description"
+          type: "textarea"
+          required: true
+          placeholder: "Describe the problem in detail"
+          validation: "string|max:2000"
+        
+        - name: "error_message"
+          label: "Error Message"
+          type: "textarea"
+          required: false
+          placeholder: "Copy any error messages you received"
+          validation: "string|max:1000"
+        
+        - name: "steps_to_reproduce"
+          label: "Steps to Reproduce"
+          type: "textarea"
+          required: false
+          placeholder: "List the steps that lead to the problem"
+          validation: "string|max:1000"
+        
+        - name: "screenshot"
+          label: "Screenshot or File"
+          type: "file"
+          required: false
+          accept: "image/*,.pdf,.doc,.docx,.txt"
+
+    change:
+      label: "Change Request"
+      description: "Request changes to existing systems or processes"
+      icon: "bi-gear"
+      color: "info"
+      fields:
+        - name: "change_type"
+          label: "Type of Change"
+          type: "select"
+          required: true
+          options:
+            - "Software Update"
+            - "Hardware Change"
+            - "Access Modification"
+            - "System Configuration"
+            - "Process Change"
+            - "Other"
+        
+        - name: "change_description"
+          label: "Change Description"
+          type: "textarea"
+          required: true
+          placeholder: "Describe the requested change in detail"
+          validation: "string|max:2000"
+        
+        - name: "business_justification"
+          label: "Business Justification"
+          type: "textarea"
+          required: true
+          placeholder: "Explain why this change is needed"
+          validation: "string|max:1000"
+        
+        - name: "impact_assessment"
+          label: "Expected Impact"
+          type: "textarea"
+          required: true
+          placeholder: "Describe the expected impact on users, systems, or processes"
+          validation: "string|max:1000"
+        
+        - name: "preferred_implementation_date"
+          label: "Preferred Implementation Date"
+          type: "date"
+          required: false
+          validation: "date|after:today"
+        
+        - name: "rollback_plan"
+          label: "Rollback Plan"
+          type: "textarea"
+          required: false
+          placeholder: "Describe how to reverse the change if needed"
+          validation: "string|max:1000"
+
+    software_request:
+      label: "Software Request"
+      description: "Request new software or licenses"
+      icon: "bi-download"
+      color: "primary"
+      freescout_tags: ["software", "request"]
+      fields:
+        - name: "application_name"
+          label: "Application Name"
+          type: "text"
+          required: true
+          validation: "string|max:255"
+        
+        - name: "vendor"
+          label: "Vendor/Publisher"
+          type: "text"
+          required: false
+          validation: "string|max:255"
+        
+        - name: "version"
+          label: "Version (if specific)"
+          type: "text"
+          required: false
+          validation: "string|max:100"
+        
+        - name: "license_type"
+          label: "License Type"
+          type: "select"
+          required: true
+          options:
+            - "Free/Open Source"
+            - "Individual License"
+            - "Volume License"
+            - "Subscription"
+            - "Unknown"
+        
+        - name: "business_purpose"
+          label: "Business Purpose"
+          type: "textarea"
+          required: true
+          placeholder: "Explain how this software will be used for business purposes"
+          validation: "string|max:1000"
+        
+        - name: "alternative_considered"
+          label: "Alternatives Considered"
+          type: "textarea"
+          required: false
+          placeholder: "List any alternative solutions you considered"
+          validation: "string|max:1000"
+        
+        - name: "users_affected"
+          label: "Number of Users"
+          type: "select"
+          required: true
+          options:
+            - "1 user"
+            - "2-5 users"
+            - "6-10 users"
+            - "11-25 users"
+            - "26+ users"
+    other:
+      label: "Other Request"
+      description: "Any other general request"
+      icon: "bi-briefcase"
+      color: "success"
+      freescout_tags: ["general"]
+      fields:
+        - name: "request_category"
+          label: "Request Category"
+          type: "select"
+          required: true
+          options:
+            - "General Support"
+            - "Training Request"
+            - "Documentation"
+            - "Consultation"
+            - "Other"
+        
+        - name: "request_description"
+          label: "Request Description"
+          type: "textarea"
+          required: true
+          placeholder: "Describe your request in detail"
+          validation: "string|max:2000"
+        
+        - name: "expected_outcome"
+          label: "Expected Outcome"
+          type: "textarea"
+          required: false
+          placeholder: "What do you expect as the result of this request?"
+          validation: "string|max:1000"
+        
+        - name: "additional_files"
+          label: "Supporting Documents/Screenshots"
+          type: "file"
+          required: false
+          accept: ".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
+          multiple: true
+
+    access_request:
+      label: "Access Request"
+      description: "Request access to systems, folders, or applications"
+      icon: "bi-key"
+      color: "secondary"
+      freescout_tags: ["access", "permissions"]
+      fields:
+        - name: "system_name"
+          label: "System/Application Name"
+          type: "text"
+          required: true
+          validation: "string|max:255"
+        
+        - name: "access_type"
+          label: "Type of Access"
+          type: "select"
+          required: true
+          options:
+            - "Read Only"
+            - "Read/Write"
+            - "Administrator"
+            - "Full Access"
+            - "Custom"
+        
+        - name: "specific_permissions"
+          label: "Specific Permissions Needed"
+          type: "textarea"
+          required: false
+          placeholder: "Describe specific permissions or access levels needed"
+          validation: "string|max:1000"
+        
+        - name: "business_justification"
+          label: "Business Justification"
+          type: "textarea"
+          required: true
+          placeholder: "Explain why this access is needed for your role"
+          validation: "string|max:1000"
+        
+        - name: "manager_approval"
+          label: "Manager Pre-Approval"
+          type: "select"
+          required: true
+          options:
+            - value: "yes"
+              label: "Yes, manager has approved"
+            - value: "no"
+              label: "No, pending manager approval"
+            - value: "na"
+              label: "Not applicable"
+        
+        - name: "temporary_access"
+          label: "Temporary Access"
+          type: "select"
+          required: true
+          options:
+            - value: "permanent"
+              label: "Permanent access needed"
+            - value: "temporary"
+              label: "Temporary access needed"
+          triggers:
+            - condition: "value == 'temporary'"
+              show_fields: ["access_end_date"]
+        
+        - name: "access_end_date"
+          label: "Access End Date"
+          type: "date"
+          required: false
+          validation: "date|after:today"
+          conditional: true
+
+# Global form settings
+settings:
+  max_file_size: "10MB"
+  allowed_file_types:
+    - "pdf"
+    - "doc"
+    - "docx"
+    - "txt"
+    - "png"
+    - "jpg"
+    - "jpeg"
+    - "gif"
+  
+  validation_rules:
+    email: "Must be a valid email address"
+    required: "This field is required"
+    max_length: "Maximum {max} characters allowed"
+    file_size: "File size must be less than {max}"
+    file_type: "File type not allowed"
+  
+  autosave_interval: 30 # seconds
+  
+  form_progress:
+    save_locally: true
+    expire_after: 24 # hours
+
+# ==============================================================================
+# EXAMPLES: Default Values and Placeholders
+# ==============================================================================
+# Below are examples showing how to use the 'default' and 'placeholder' options
+# for each field type. These examples are commented out - copy and adapt them
+# for your actual form fields.
+
+# TEXT FIELD EXAMPLES:
+# - name: "company_name"
+#   label: "Company Name"
+#   type: "text"
+#   required: false
+#   placeholder: "Enter your company name"  # Shows as hint text
+#   default: "Your Company Inc."  # Pre-fills field with this value
+
+# EMAIL FIELD EXAMPLES:
+# - name: "cc_email"
+#   label: "CC Email"
+#   type: "email"
+#   required: false
+#   placeholder: "additional@example.com"  # Shows as hint text
+#   default: "it@yourcompany.com"  # Pre-fills with this email
+
+# SELECT FIELD EXAMPLES:
+# - name: "department"
+#   label: "Department"
+#   type: "select"
+#   required: true
+#   placeholder: "Choose your department..."  # Replaces "Select department..."
+#   default: "IT"  # Pre-selects "IT" option
+#   options:
+#     - "IT"
+#     - "HR"
+#     - "Finance"
+
+# SELECT FIELD WITH VALUE/LABEL (must match value):
+# - name: "urgency"
+#   label: "Urgency Level"
+#   type: "select"
+#   required: true
+#   default: "normal"  # Must match one of the option values
+#   options:
+#     - value: "low"
+#       label: "Low Priority"
+#     - value: "normal"
+#       label: "Normal Priority"
+#     - value: "high"
+#       label: "High Priority"
+
+# TEXTAREA FIELD EXAMPLES:
+# - name: "additional_notes"
+#   label: "Additional Notes"
+#   type: "textarea"
+#   required: false
+#   placeholder: "Add any additional information here..."  # Shows as hint
+#   default: "Please provide as much detail as possible."  # Pre-fills textarea
+
+# CHECKBOX GROUP EXAMPLES:
+# - name: "required_equipment"
+#   label: "Required Equipment"
+#   type: "checkbox_group"
+#   required: false
+#   default:  # Pre-checks these options
+#     - "Laptop"
+#     - "Monitor"
+#   options:
+#     - "Laptop"
+#     - "Monitor"
+#     - "Keyboard"
+#     - "Mouse"
+#     - "Headset"
+
+# DATE FIELD EXAMPLES:
+# - name: "preferred_date"
+#   label: "Preferred Date"
+#   type: "date"
+#   required: false
+#   default: "2025-12-01"  # Pre-fills with this date (YYYY-MM-DD format)
+
+# COMBINED EXAMPLE (showing multiple options together):
+# - name: "installation_notes"
+#   label: "Installation Notes"
+#   type: "textarea"
+#   required: false
+#   placeholder: "Describe any special installation requirements or preferences"
+#   default: "Standard installation is preferred unless otherwise specified."
+#   validation: "string|max:500"

@@ -1,0 +1,47 @@
+<div class="form-group">
+    <label class="form-label">
+        {{ field.label }}
+        {% if field.required|default(false) %}
+            <span class="text-danger">*</span>
+        {% endif %}
+    </label>
+    
+    <div class="file-drop-zone" id="dropZone_{{ field.name }}">
+        <i class="bi bi-cloud-upload text-muted" style="font-size: 2rem;"></i>
+        <div class="mt-2">
+            <p class="mb-1">Drop files here or click to browse</p>
+            <small class="text-muted">
+                {% if field.multiple|default(false) %}
+                    Multiple files allowed.
+                {% else %}
+                    Single file only.
+                {% endif %}
+                {% if field.accept|default('') %}
+                    Accepted types: {{ field.accept }}
+                {% endif %}
+            </small>
+        </div>
+        
+        <input 
+            type="file" 
+            class="d-none" 
+            id="{{ field.name }}" 
+            name="{{ field.name }}{% if field.multiple|default(false) %}[]{% endif %}" 
+            {% if field.required|default(false) %}required{% endif %}
+            {% if field.accept|default('') %}accept="{{ field.accept }}"{% endif %}
+            {% if field.multiple|default(false) %}multiple{% endif %}
+        >
+    </div>
+    
+    <div class="file-list mt-3" id="fileList_{{ field.name }}">
+        <!-- Selected files will appear here -->
+    </div>
+    
+    <div class="invalid-feedback">
+        {% if field.required|default(false) %}
+            Please select a file.
+        {% else %}
+            Please select a valid file.
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,47 @@
+<div class="form-group">
+    <label for="{{ field.name }}" class="form-label">
+        {{ field.label }}
+        {% if field.required|default(false) %}
+            <span class="text-danger">*</span>
+        {% endif %}
+    </label>
+    
+    <select 
+        class="form-select" 
+        id="{{ field.name }}" 
+        name="{{ field.name }}" 
+        {% if field.required|default(false) %}required{% endif %}
+        {% if field.triggers|default([]) %}data-triggers='{{ field.triggers|json_encode }}'{% endif %}
+    >
+        <option value="">{% if field.placeholder|default('') %}{{ field.placeholder }}{% else %}Select {{ field.label|lower }}...{% endif %}</option>
+        {% for option in field.options|default([]) %}
+            {% if option.value is defined %}
+                <option 
+                    value="{{ option.value }}"
+                    {% if autosaved_data[field.name]|default('') == option.value %}
+                        selected
+                    {% elseif not autosaved_data[field.name]|default('') and field.default|default('') == option.value %}
+                        selected
+                    {% endif %}
+                >
+                    {{ option.label }}
+                </option>
+            {% else %}
+                <option 
+                    value="{{ option }}"
+                    {% if autosaved_data[field.name]|default('') == option %}
+                        selected
+                    {% elseif not autosaved_data[field.name]|default('') and field.default|default('') == option %}
+                        selected
+                    {% endif %}
+                >
+                    {{ option }}
+                </option>
+            {% endif %}
+        {% endfor %}
+    </select>
+    
+    <div class="invalid-feedback">
+        Please select a {{ field.label|lower }}.
+    </div>
+</div>

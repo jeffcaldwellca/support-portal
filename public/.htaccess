@@ -1,0 +1,17 @@
+# PHP timeout settings
+php_value max_execution_time 600
+php_value max_input_time 600
+php_value memory_limit 256M
+
+# Enable URL rewriting
+RewriteEngine On
+
+# Handle Angular and other front-end routes
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]
+
+# Security headers
+Header always set X-Content-Type-Options nosniff
+Header always set X-Frame-Options DENY
+Header always set X-XSS-Protection "1; mode=block"

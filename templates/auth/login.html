@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <div class="text-center mb-4">
+                        {% if branding.use_logo|default(true) %}
+                            <img src="/assets/img/logo.png" alt="{{ branding.company_name }}" style="max-width: 120px; height: auto;" class="mb-3" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                            <i class="{{ branding.brand_icon }} text-primary" style="font-size: 3rem; display:none;"></i>
+                        {% else %}
+                            <i class="{{ branding.brand_icon }} text-primary" style="font-size: 3rem;"></i>
+                        {% endif %}
+                        <h3 class="mt-3 mb-0">{{ branding.portal_title }}</h3>
+                        <p class="text-muted">{{ branding.company_name }}</p>
+                    </div>
+                    
+                    {% if error %}
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        {% if error == 'missing_credentials' %}
+                            Please enter both username and password.
+                        {% elseif error == 'invalid_credentials' %}
+                            Invalid username or password. Please try again.
+                        {% elseif error == 'system_error' %}
+                            A system error occurred. Please try again later.
+                        {% elseif error == 'ldap_disabled' %}
+                            LDAP authentication is not enabled.
+                        {% elseif error == 'local_auth_disabled' %}
+                            Local authentication is not enabled.
+                        {% else %}
+                            Authentication failed. Please try again.
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    
+                    <form method="post" action="/auth/login" class="needs-validation" novalidate>
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        
+                        {% if show_auth_method_selector %}
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-key me-1"></i>
+                                Authentication Method
+                            </label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="auth_method" id="auth_ldap" value="ldap" checked>
+                                <label class="btn btn-outline-primary" for="auth_ldap">
+                                    <i class="bi bi-building me-1"></i>
+                                    LDAP SSO
+                                </label>
+                                
+                                <input type="radio" class="btn-check" name="auth_method" id="auth_local" value="local">
+                                <label class="btn btn-outline-primary" for="auth_local">
+                                    <i class="bi bi-person-badge me-1"></i>
+                                    Local
+                                </label>
+                            </div>
+                        </div>
+                        {% else %}
+                            {% if enable_ldap %}
+                                <input type="hidden" name="auth_method" value="ldap">
+                            {% else %}
+                                <input type="hidden" name="auth_method" value="local">
+                            {% endif %}
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label for="username" class="form-label">
+                                <i class="bi bi-person me-1"></i>
+                                Username
+                            </label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="username" 
+                                name="username" 
+                                required 
+                                autocomplete="username"
+                                placeholder="Enter your username"
+                            >
+                            <div class="invalid-feedback">
+                                Please enter your username.
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="password" class="form-label">
+                                <i class="bi bi-lock me-1"></i>
+                                Password
+                            </label>
+                            <input 
+                                type="password" 
+                                class="form-control" 
+                                id="password" 
+                                name="password" 
+                                required 
+                                autocomplete="current-password"
+                                placeholder="Enter your password"
+                            >
+                            <div class="invalid-feedback">
+                                Please enter your password.
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>
+                            Sign In
+                        </button>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            {% if show_auth_method_selector %}
+                                Select your authentication method and sign in with your credentials.
+                            {% elseif enable_ldap %}
+                                Use your corporate LDAP credentials to sign in.
+                            {% else %}
+                                Use your local account credentials to sign in.
+                            {% endif %}
+                        </small>
+                    </div>
+                    
+                    {% if enable_local_auth %}
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            Don't have a local account? 
+                            <a href="/auth/register" class="text-decoration-none">
+                                <i class="bi bi-person-plus me-1"></i>Create one here
+                            </a>
+                        </small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <small class="text-muted">
+                    Having trouble signing in? Contact IT Support directly.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Bootstrap form validation
+(function() {
+    'use strict';
+    window.addEventListener('load', function() {
+        var forms = document.getElementsByClassName('needs-validation');
+        var validation = Array.prototype.filter.call(forms, function(form) {
+            form.addEventListener('submit', function(event) {
+                if (form.checkValidity() === false) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            }, false);
+        });
+    }, false);
+})();
+
+// Auto-focus username field
+document.getElementById('username').focus();
+</script>
+{% endblock %}

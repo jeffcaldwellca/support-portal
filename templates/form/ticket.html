@@ -1,0 +1,491 @@
+{% extends "base.html" %}
+
+{% block title %}Ticket #{{ ticket.number }} - IT Helpdesk{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Success Message for Reply -->
+    {% if app.request.query.get('reply') == 'success' %}
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                Your reply has been sent successfully!
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Back to Tickets -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <a href="/" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to My Tickets
+            </a>
+        </div>
+    </div>
+    
+    <!-- Ticket Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h4 class="mb-2">
+                                <i class="bi bi-ticket-perforated me-2"></i>
+                                Ticket #{{ ticket.number }}
+                            </h4>
+                            <h5 class="text-muted mb-3">{{ ticket.subject }}</h5>
+                            <div>
+                                <span class="me-3">
+                                    <i class="bi bi-person me-1"></i>
+                                    {{ ticket.customer.firstName }} {{ ticket.customer.lastName }}
+                                </span>
+                                <span>
+                                    <i class="bi bi-clock me-1"></i>
+                                    Created {{ ticket.createdAt|date('M d, Y g:i A') }}
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            {% if ticket.status == 'active' %}
+                                <span class="badge bg-success fs-6">Active</span>
+                            {% elseif ticket.status == 'pending' %}
+                                <span class="badge bg-warning fs-6">Pending</span>
+                            {% elseif ticket.status == 'closed' %}
+                                <span class="badge bg-secondary fs-6">Closed</span>
+                            {% else %}
+                                <span class="badge bg-info fs-6">{{ ticket.status|title }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ticket Details -->
+    <div class="row">
+        <div class="col-lg-8">
+                        <!-- Reply Form (only if ticket is active) -->
+            {% if ticket.status == 'active' %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-reply me-2"></i>
+                        Add a Reply
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form id="replyForm" method="POST" action="/ticket/{{ ticket.id }}/reply" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div class="mb-3">
+                            <label for="reply_message" class="form-label">Your Message</label>
+                            <textarea 
+                                class="form-control" 
+                                id="reply_message" 
+                                name="message" 
+                                rows="5" 
+                                required
+                                placeholder="Type your message here..."
+                            ></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="reply_attachments" class="form-label">
+                                <i class="bi bi-paperclip me-1"></i>
+                                Attachments (optional)
+                            </label>
+                            <input 
+                                type="file" 
+                                class="form-control" 
+                                id="reply_attachments" 
+                                name="attachments[]" 
+                                multiple
+                                accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.gif,.xlsx,.xls,.csv"
+                            >
+                            <div class="form-text">Maximum file size: 10MB per file</div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary" id="submitReply">
+                                <i class="bi bi-send me-2"></i>
+                                Send Reply
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+            <!-- Conversation Threads -->
+            {% if ticket._embedded and ticket._embedded.threads %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-chat-left-text me-2"></i>
+                        Conversation History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for thread in ticket._embedded.threads %}
+                    <div class="thread-item {% if thread.type == 'customer' %}thread-customer{% else %}thread-staff{% endif %} mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>
+                                    {% if thread.type == 'customer' %}
+                                        <i class="bi bi-person-circle text-primary me-1"></i>
+                                        {{ thread.createdBy.firstName }} {{ thread.createdBy.lastName }}
+                                    {% else %}
+                                        <i class="bi bi-headset text-success me-1"></i>
+                                        {{ thread.createdBy.firstName }} {{ thread.createdBy.lastName }}
+                                        <span class="badge bg-success ms-1">Staff</span>
+                                    {% endif %}
+                                </strong>
+                            </div>
+                            <small class="text-muted">
+                                {{ thread.createdAt|date('M d, Y g:i A') }}
+                            </small>
+                        </div>
+                        <div class="thread-body">
+                            {{ thread.body|raw }}
+                        </div>
+                        {% if thread.attachments and thread.attachments|length > 0 %}
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="bi bi-paperclip me-1"></i>
+                                Attachments: 
+                                {% for attachment in thread.attachments %}
+                                    {{ attachment.fileName }}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if not loop.last %}
+                    <hr>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            
+
+            
+
+        </div>
+        
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Ticket Info -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Ticket Information
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <dl class="mb-0">
+                        <dt>Last Updated:</dt>
+                        <dd class="mb-2">
+                            <i class="bi bi-clock-history me-1"></i>
+                            {{ ticket.updatedAt|date('M d, Y g:i A') }}
+                        </dd>
+                        
+
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- What Happens Next -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-list-check me-2"></i>
+                        What Happens Next?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item completed">
+                            <div class="timeline-marker">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Request Submitted</strong>
+                                <div class="small text-muted">Your request has been logged in our system</div>
+                            </div>
+                        </div>
+                        
+                        {% if ticket.status == 'closed' %}
+                        {# Ticket is closed - show all as completed #}
+                        <div class="timeline-item completed">
+                            <div class="timeline-marker">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Assigned</strong>
+                                <div class="small text-muted">Ticket was assigned to IT team</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item completed">
+                            <div class="timeline-marker">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Work Completed</strong>
+                                <div class="small text-muted">Your request has been resolved</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item completed">
+                            <div class="timeline-marker">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Closed</strong>
+                                <div class="small text-muted">Ticket has been closed</div>
+                            </div>
+                        </div>
+                        {% elseif ticket.assignee is defined and ticket.assignee %}
+                        {# Ticket is assigned - show In Progress as active #}
+                        <div class="timeline-item completed">
+                            <div class="timeline-marker">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Assigned</strong>
+                                <div class="small text-muted">Ticket assigned to {{ ticket.assignee.firstName }} {{ ticket.assignee.lastName }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item active">
+                            <div class="timeline-marker">
+                                <i class="bi bi-gear text-warning"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>In Progress</strong>
+                                <div class="small text-muted">Work is being done on your request</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker">
+                                <i class="bi bi-check-circle text-muted"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Completed</strong>
+                                <div class="small text-muted">You'll receive notification when done</div>
+                            </div>
+                        </div>
+                        {% else %}
+                        {# Ticket not assigned yet - show Under Review as active #}
+                        <div class="timeline-item active">
+                            <div class="timeline-marker">
+                                <i class="bi bi-hourglass-split text-warning"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Under Review</strong>
+                                <div class="small text-muted">IT team will review and assign your request</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker">
+                                <i class="bi bi-gear text-muted"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>In Progress</strong>
+                                <div class="small text-muted">Work will begin on your request</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker">
+                                <i class="bi bi-check-circle text-muted"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Completed</strong>
+                                <div class="small text-muted">You'll receive notification when done</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-telephone me-2"></i>
+                        Need Help?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        {% if ticket.status == 'active' %}
+                        <div class="mb-3">
+                            <strong>Add Updates</strong><br>
+                            Use the reply form to add additional information or ask questions about this ticket
+                        </div>
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <strong>Email Notifications</strong><br>
+                            You'll receive updates when staff responds to your ticket
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Reference Number</strong><br>
+                            Ticket #{{ ticket.number }}
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -1.75rem;
+    top: 1.5rem;
+    width: 2px;
+    height: calc(100% + 0.5rem);
+    background-color: #dee2e6;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2rem;
+    top: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    border-radius: 50%;
+}
+
+.timeline-item.completed .timeline-marker {
+    background-color: #d1e7dd;
+}
+
+.timeline-item.active .timeline-marker {
+    background-color: #fff3cd;
+}
+
+.timeline-content {
+    padding-left: 0.5rem;
+}
+
+.thread-item {
+    padding: 1rem;
+    border-radius: 0.375rem;
+    background-color: #f8f9fa;
+}
+
+.thread-customer {
+    border-left: 4px solid #0d6efd;
+}
+
+.thread-staff {
+    border-left: 4px solid #198754;
+    background-color: #e7f5ef;
+}
+
+.thread-body {
+    margin-top: 0.5rem;
+    line-height: 1.6;
+}
+
+.thread-body p:last-child {
+    margin-bottom: 0;
+}
+
+@media print {
+    .btn, .navbar, .card-header {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}
+
+#replyForm button[type="submit"] {
+    position: relative;
+}
+
+#replyForm button[type="submit"]:disabled {
+    opacity: 0.6;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const replyForm = document.getElementById('replyForm');
+    if (!replyForm) return;
+    
+    replyForm.addEventListener('submit', function(e) {
+        const submitBtn = document.getElementById('submitReply');
+        const messageField = document.getElementById('reply_message');
+        
+        if (!messageField.value.trim()) {
+            e.preventDefault();
+            alert('Please enter a message');
+            return;
+        }
+        
+        // Disable submit button to prevent double submission
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...';
+    });
+    
+    // File size validation
+    const fileInput = document.getElementById('reply_attachments');
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            let valid = true;
+            
+            for (let file of this.files) {
+                if (file.size > maxSize) {
+                    alert(`File "${file.name}" is too large. Maximum size is 10MB.`);
+                    valid = false;
+                    break;
+                }
+            }
+            
+            if (!valid) {
+                this.value = '';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

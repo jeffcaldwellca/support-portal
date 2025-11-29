@@ -1,0 +1,38 @@
+<div class="form-group">
+    <label class="form-label">
+        {{ field.label }}
+        {% if field.required|default(false) %}
+            <span class="text-danger">*</span>
+        {% endif %}
+    </label>
+    
+    <div class="row">
+        {% for option in field.options|default([]) %}
+            <div class="col-md-6 mb-2">
+                <div class="form-check">
+                    <input 
+                        class="form-check-input" 
+                        type="checkbox" 
+                        id="{{ field.name }}_{{ loop.index }}" 
+                        name="{{ field.name }}[]" 
+                        value="{{ option }}"
+                        {% if autosaved_data[field.name]|default([]) and option in autosaved_data[field.name] %}
+                            checked
+                        {% elseif not autosaved_data[field.name]|default([]) and field.default|default([]) and option in field.default %}
+                            checked
+                        {% endif %}
+                    >
+                    <label class="form-check-label" for="{{ field.name }}_{{ loop.index }}">
+                        {{ option }}
+                    </label>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    {% if field.required|default(false) %}
+        <div class="invalid-feedback">
+            Please select at least one option.
+        </div>
+    {% endif %}
+</div>

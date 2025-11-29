@@ -1,0 +1,34 @@
+<div class="form-group">
+    <label for="{{ field.name }}" class="form-label">
+        {{ field.label }}
+        {% if field.required|default(false) %}
+            <span class="text-danger">*</span>
+        {% endif %}
+    </label>
+    
+    <textarea 
+        class="form-control" 
+        id="{{ field.name }}" 
+        name="{{ field.name }}" 
+        rows="4"
+        {% if field.required|default(false) %}required{% endif %}
+        {% if field.placeholder|default('') %}placeholder="{{ field.placeholder }}"{% endif %}
+    >{% if autosaved_data[field.name]|default('') %}{{ autosaved_data[field.name] }}{% elseif field.default|default('') %}{{ field.default }}{% endif %}</textarea>
+    
+    {% if field.validation|default('') %}
+        <div class="form-text">
+            {% if 'max:' in field.validation %}
+                {% set max_length = field.validation|split('max:')|last|split('|')|first %}
+                Maximum {{ max_length }} characters
+            {% endif %}
+        </div>
+    {% endif %}
+    
+    <div class="invalid-feedback">
+        {% if field.required|default(false) %}
+            {{ field.label }} is required.
+        {% else %}
+            Please enter valid {{ field.label|lower }}.
+        {% endif %}
+    </div>
+</div>

@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}Request Submitted - IT Helpdesk{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Success Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-success" role="alert">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill me-3" style="font-size: 2rem;"></i>
+                    <div>
+                        <h4 class="alert-heading mb-1">Request Submitted Successfully!</h4>
+                        <p class="mb-0">Your support ticket has been created and assigned ID: <strong>#{{ ticket.number }}</strong></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ticket Summary -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-ticket me-2"></i>
+                        Ticket Summary
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">Ticket Number:</dt>
+                        <dd class="col-sm-9"><strong>#{{ ticket.number }}</strong></dd>
+                        
+                        <dt class="col-sm-3">Subject:</dt>
+                        <dd class="col-sm-9">{{ ticket.subject }}</dd>
+                        
+                        <dt class="col-sm-3">Status:</dt>
+                        <dd class="col-sm-9">
+                            <span class="badge bg-success">Active</span>
+                        </dd>
+                        
+                        <dt class="col-sm-3">Created:</dt>
+                        <dd class="col-sm-9">{{ ticket.createdAt|date('M d, Y g:i A') }}</dd>
+                    </dl>
+                </div>
+            </div>
+            
+            {% if submission %}
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Request Details
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-3">Request Type:</dt>
+                        <dd class="col-sm-9">{{ submission.request_type|replace({'_': ' '})|title }}</dd>
+                        
+                        <dt class="col-sm-3">Department:</dt>
+                        <dd class="col-sm-9">{{ submission.form_data.department|default('Not specified') }}</dd>
+                        
+                        <dt class="col-sm-3">Priority:</dt>
+                        <dd class="col-sm-9">{{ submission.form_data.priority|title }}</dd>
+                    </dl>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Next Steps -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-list-check me-2"></i>
+                        What Happens Next?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item completed">
+                            <div class="timeline-marker">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Request Submitted</strong>
+                                <div class="small text-muted">Your request has been logged in our system</div>
+                            </div>
+                        </div>
+                        
+                        {% if ticket.assignee is defined and ticket.assignee %}
+                        {# Ticket is assigned - show In Progress as active #}
+                        <div class="timeline-item completed">
+                            <div class="timeline-marker">
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Assigned</strong>
+                                <div class="small text-muted">Ticket assigned to {{ ticket.assignee.firstName }} {{ ticket.assignee.lastName }}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item active">
+                            <div class="timeline-marker">
+                                <i class="bi bi-gear text-warning"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>In Progress</strong>
+                                <div class="small text-muted">Work is being done on your request</div>
+                            </div>
+                        </div>
+                        {% else %}
+                        {# Ticket not assigned yet - show Under Review as active #}
+                        <div class="timeline-item active">
+                            <div class="timeline-marker">
+                                <i class="bi bi-hourglass-split text-warning"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Under Review</strong>
+                                <div class="small text-muted">IT team will review and assign your request</div>
+                            </div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker">
+                                <i class="bi bi-gear text-muted"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>In Progress</strong>
+                                <div class="small text-muted">Work will begin on your request</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-marker">
+                                <i class="bi bi-check-circle text-muted"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <strong>Completed</strong>
+                                <div class="small text-muted">You'll receive notification when done</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="bi bi-telephone me-2"></i>
+                        Need Help?
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="small">
+                        <div class="mb-3">
+                            <strong>Email Confirmation</strong><br>
+                            A confirmation email has been sent to {{ user.email }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Updates</strong><br>
+                            You'll receive email notifications when your ticket status changes
+                        </div>
+                        
+                        <div class="mb-3">
+                            <strong>Questions?</strong><br>
+                            Reference ticket #{{ ticket.number }} when contacting support
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <a href="/ticket/{{ ticket.id }}" class="btn btn-outline-primary">
+                                <i class="bi bi-eye me-2"></i>
+                                View Ticket Details
+                            </a>
+                        </div>
+                        
+                        <div>
+                            <a href="/" class="btn btn-primary">
+                                <i class="bi bi-house me-2"></i>
+                                Back to Home
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: -1.75rem;
+    top: 1.5rem;
+    width: 2px;
+    height: calc(100% + 0.5rem);
+    background-color: #dee2e6;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -2rem;
+    top: 0;
+    width: 1.5rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: white;
+    border-radius: 50%;
+}
+
+.timeline-item.completed .timeline-marker {
+    background-color: #d1e7dd;
+}
+
+.timeline-item.active .timeline-marker {
+    background-color: #fff3cd;
+}
+
+.timeline-content {
+    padding-left: 0.5rem;
+}
+
+@media print {
+    .btn, .navbar, .card-header {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+}
+</style>
+{% endblock %}

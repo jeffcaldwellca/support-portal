@@ -1,0 +1,31 @@
+# Dependency folders
+/vendor/
+/node_modules/
+
+# Environment files
+.env
+
+# Database files
+*.db
+*.sqlite
+
+# Log files
+/logs/*.log
+
+# Upload files
+/uploads/*
+!/uploads/.gitkeep
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temp files
+/tmp/
+*.tmp
