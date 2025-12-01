@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# Environment files (contain secrets)
+.env
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dependencies (will be installed in container)
+vendor
+
+# Development files
+tests
+phpunit.xml
+.phpunit.cache
+
+# Temporary files
+tmp
+*.tmp
+
+# Logs
+logs
+
+# Database files
+data/*.db
+data/*.sqlite
+*.db
+*.sqlite
+
+# Uploads (mounted separately if needed)
+uploads
+
+# Documentation
+README.md
+LICENSE
+screenshot.png

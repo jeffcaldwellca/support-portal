@@ -23,12 +23,13 @@ services:
     volumes:
       - ./:/var/www/html
     environment:
+      # Database connection environment variables (for potential MySQL/MariaDB support)
       - DB_CONNECTION=mysql
       - DB_HOST=db
       - DB_PORT=3306
       - DB_DATABASE=${DB_DATABASE:-support_portal}
       - DB_USERNAME=${DB_USERNAME:-support_portal}
-      - DB_PASSWORD=${DB_PASSWORD:-secret}
+      - DB_PASSWORD=${DB_PASSWORD:-changeme_user}
     depends_on:
       - db
     networks:
@@ -42,10 +43,12 @@ services:
     ports:
       - "3306:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      # IMPORTANT: Change these default values in production!
+      # Use strong passwords and store them securely in environment variables
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-changeme_root}
       MYSQL_DATABASE: ${DB_DATABASE:-support_portal}
       MYSQL_USER: ${DB_USERNAME:-support_portal}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-secret}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-changeme_user}
     volumes:
       - db-data:/var/lib/mysql
     networks:
@@ -61,7 +64,7 @@ services:
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-rootpassword}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-changeme_root}
     depends_on:
       - db
     networks:
