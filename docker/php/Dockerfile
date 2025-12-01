@@ -43,7 +43,7 @@ RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 
 # Configure Apache for Slim Framework
 RUN echo '<Directory /var/www/html/public>\n\
-    Options Indexes FollowSymLinks\n\
+    Options FollowSymLinks\n\
     AllowOverride All\n\
     Require all granted\n\
 </Directory>' > /etc/apache2/conf-available/slim.conf \
