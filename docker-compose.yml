@@ -1,5 +1,5 @@
 services:
-  # Apache web server with PHP
+  # Apache web server with PHP (SQLite database)
   web:
     build:
       context: .
@@ -9,43 +9,6 @@ services:
       - "8000:80"
     volumes:
       - ./:/var/www/html
-    depends_on:
-      - db
-    networks:
-      - support-portal-network
-    restart: unless-stopped
-
-  # MariaDB database
-  db:
-    image: mariadb:10.11
-    container_name: support-portal-db
-    ports:
-      - "3306:3306"
-    environment:
-      # IMPORTANT: Change these default values in production!
-      # Use strong passwords and store them securely in environment variables
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-changeme_root}
-      MYSQL_DATABASE: ${DB_DATABASE:-support_portal}
-      MYSQL_USER: ${DB_USERNAME:-support_portal}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-changeme_user}
-    volumes:
-      - db-data:/var/lib/mysql
-    networks:
-      - support-portal-network
-    restart: unless-stopped
-
-  # phpMyAdmin for database management
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: support-portal-phpmyadmin
-    ports:
-      - "8080:80"
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-changeme_root}
-    depends_on:
-      - db
     networks:
       - support-portal-network
     restart: unless-stopped
@@ -53,7 +16,3 @@ services:
 networks:
   support-portal-network:
     driver: bridge
-
-volumes:
-  db-data:
-    driver: local
