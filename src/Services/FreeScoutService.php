@@ -16,12 +16,14 @@ class FreeScoutService
     private ?array $customFieldsCache = null;
     private array $mappings;
     private ?array $fieldDefinitions = null;
+    private ?int $mailboxId = null;
     
-    public function __construct(string $apiUrl, string $apiKey, LoggerInterface $logger, ?array $mappings = null, ?array $fieldDefinitions = null)
+    public function __construct(string $apiUrl, string $apiKey, LoggerInterface $logger, ?array $mappings = null, ?array $fieldDefinitions = null, ?int $mailboxId = null)
     {
         $this->apiUrl = rtrim($apiUrl, '/');
         $this->apiKey = $apiKey;
         $this->logger = $logger;
+        $this->mailboxId = $mailboxId;
         
         // Load mappings from config file or use provided mappings
         if ($mappings === null) {
@@ -502,9 +504,8 @@ class FreeScoutService
             ]);
         }
         
-        // Get default mailbox
-        $mailboxes = $this->getMailboxes();
-        $mailboxId = $mailboxes[0]['id'] ?? 1;
+        // Get mailbox ID from configuration or fall back to API lookup
+        $mailboxId = $this->getConfiguredMailboxId();
         
         // Build subject
         $subject = $this->buildSubject($requestType, $formData);
@@ -551,6 +552,72 @@ class FreeScoutService
         }
         
         return $ticketData;
+    }
+    
+    /**
+     * Get the configured mailbox ID
+     * Uses the environment variable if set, otherwise falls back to API lookup
+     * 
+     * @return int The mailbox ID to use for ticket creation
+     * @throws \RuntimeException If no mailbox ID is configured and none found via API
+     */
+    public function getConfiguredMailboxId(): int
+    {
+        // Use configured mailbox ID if available
+        if ($this->mailboxId !== null) {
+            $this->logger->debug('Using configured mailbox ID', ['mailbox_id' => $this->mailboxId]);
+            return $this->mailboxId;
+        }
+        
+        // Fall back to fetching first mailbox from API
+        $this->logger->warning('No mailbox ID configured, falling back to API lookup');
+        $mailboxes = $this->getMailboxes();
+        
+        if (empty($mailboxes)) {
+            throw new \RuntimeException('No mailbox ID configured and no mailboxes found in FreeScout. Please set FREESCOUT_MAILBOX_ID environment variable.');
+        }
+        
+        $mailboxId = $mailboxes[0]['id'] ?? null;
+        if ($mailboxId === null) {
+            throw new \RuntimeException('Could not determine mailbox ID from FreeScout API response.');
+        }
+        
+        return (int) $mailboxId;
+    }
+    
+    /**
+     * Validate that the configured mailbox ID exists in FreeScout
+     * 
+     * @return bool True if mailbox exists, false otherwise
+     */
+    public function validateMailboxId(): bool
+    {
+        if ($this->mailboxId === null) {
+            $this->logger->warning('No mailbox ID configured for validation');
+            return false;
+        }
+        
+        try {
+            $mailboxes = $this->getMailboxes();
+            foreach ($mailboxes as $mailbox) {
+                if (isset($mailbox['id']) && (int) $mailbox['id'] === $this->mailboxId) {
+                    $this->logger->info('Mailbox ID validated successfully', ['mailbox_id' => $this->mailboxId]);
+                    return true;
+                }
+            }
+            
+            $this->logger->error('Configured mailbox ID not found in FreeScout', [
+                'configured_mailbox_id' => $this->mailboxId,
+                'available_mailboxes' => array_column($mailboxes, 'id')
+            ]);
+            return false;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to validate mailbox ID', [
+                'mailbox_id' => $this->mailboxId,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
     }
     
     private function buildSubject(string $requestType, array $formData): string

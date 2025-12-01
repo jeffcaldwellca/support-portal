@@ -29,3 +29,6 @@ Thumbs.db
 # Temp files
 /tmp/
 *.tmp
+
+# PHPUnit cache
+.phpunit.cache/

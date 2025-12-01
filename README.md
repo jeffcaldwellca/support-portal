@@ -170,10 +170,25 @@ server {
 1. **Install the API Module** in FreeScout (required)
 2. Generate an API key in FreeScout: Settings → API
 3. Add the API key to your `.env` file
-4. (Optional) Install Custom Fields and Tags modules to FreeScout for enhanced functionality
-5. (Optional) Configure custom fields in FreeScout that match your form field names
+4. **Set the Mailbox ID** - Find your mailbox ID in FreeScout: Manage → Mailboxes (the ID is visible in the URL when editing a mailbox, or via the API)
+5. (Optional) Install Custom Fields and Tags modules to FreeScout for enhanced functionality
+6. (Optional) Configure custom fields in FreeScout that match your form field names
 
 ## Configuration
+
+### FreeScout Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `FREESCOUT_API_URL` | Yes | - | The base URL for your FreeScout API (e.g., `https://helpdesk.example.com/api`) |
+| `FREESCOUT_API_KEY` | Yes | - | API key generated in FreeScout Admin > Manage > API |
+| `FREESCOUT_MAILBOX_ID` | Recommended | Auto-detect | The numeric ID of the FreeScout mailbox to submit tickets to. If not set, the application will attempt to use the first available mailbox from the API. |
+
+**Finding your Mailbox ID:**
+- Navigate to FreeScout Admin > Manage > Mailboxes
+- Click on the mailbox you want to use
+- The mailbox ID is the number in the URL (e.g., `/mailboxes/1/edit` means ID is `1`)
+- Alternatively, use the FreeScout API: `GET /api/mailboxes` to list all mailboxes with their IDs
 
 ### Form Fields
 

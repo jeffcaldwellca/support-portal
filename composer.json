@@ -25,11 +25,17 @@
             "HelpdeskForm\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "HelpdeskForm\\Tests\\": "tests/"
+        }
+    },
     "config": {
         "optimize-autoloader": true,
         "process-timeout": 0
     },
     "scripts": {
-        "start": "php -S localhost:8080 -t public public/router.php"
+        "start": "php -S localhost:8080 -t public public/router.php",
+        "test": "phpunit"
     }
 }

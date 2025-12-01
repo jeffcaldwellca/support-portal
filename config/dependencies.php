@@ -107,12 +107,22 @@ return function (ContainerBuilder $containerBuilder) {
             $configService = $c->get(ConfigService::class);
             $fieldDefinitions = $configService->getAllFieldDefinitions();
             
+            // Get mailbox ID from environment variable (optional, will fall back to API lookup)
+            $mailboxId = null;
+            if (!empty($_ENV['FREESCOUT_MAILBOX_ID'])) {
+                $mailboxId = (int) $_ENV['FREESCOUT_MAILBOX_ID'];
+                if ($mailboxId <= 0) {
+                    throw new \InvalidArgumentException('FREESCOUT_MAILBOX_ID must be a positive integer');
+                }
+            }
+            
             return new FreeScoutService(
                 $_ENV['FREESCOUT_API_URL'],
                 $_ENV['FREESCOUT_API_KEY'],
                 $c->get(Logger::class),
                 $mappings,
-                $fieldDefinitions
+                $fieldDefinitions,
+                $mailboxId
             );
         },
         
