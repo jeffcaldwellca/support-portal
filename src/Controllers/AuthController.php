@@ -73,6 +73,8 @@ class AuthController
         $username = $data['username'] ?? '';
         $password = $data['password'] ?? '';
         $authMethod = $data['auth_method'] ?? 'ldap'; // Default to LDAP for backward compatibility
+
+        $password = html_entity_decode($password, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         
         if (empty($username) || empty($password)) {
             return $response
