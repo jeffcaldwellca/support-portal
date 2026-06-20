@@ -13,6 +13,15 @@ use HelpdeskForm\Services\DatabaseService;
 
 class AuthController
 {
+    /** Session lifetime in seconds (8 hours). Used for both the DB record and the cookie. */
+    private const SESSION_LIFETIME = 3600 * 8;
+
+    /** Max failed login attempts per identifier within the lockout window. */
+    private const MAX_LOGIN_ATTEMPTS = 10;
+
+    /** Lockout window in seconds (15 minutes). */
+    private const LOGIN_LOCKOUT_WINDOW = 900;
+
     private Twig $twig;
     private LdapService $ldapService;
     private LocalAuthService $localAuthService;
@@ -42,7 +51,7 @@ class AuthController
     public function showLogin(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
     {
         // If authentication is disabled, redirect to main form
-        if ($_ENV['DISABLE_AUTH'] === 'true') {
+        if (($_ENV['DISABLE_AUTH'] ?? '') === 'true') {
             return $response
                 ->withStatus(302)
                 ->withHeader('Location', '/');
@@ -86,16 +95,25 @@ class AuthController
                 ->withStatus(302)
                 ->withHeader('Location', '/auth/login?error=ldap_disabled');
         }
-        
+
         if ($authMethod === 'local' && !$this->enableLocalAuth) {
             return $response
                 ->withStatus(302)
                 ->withHeader('Location', '/auth/login?error=local_auth_disabled');
         }
-        
+
+        // Throttle brute-force attempts (keyed on username + client IP).
+        $attemptId = $this->loginAttemptIdentifier($username);
+        if ($this->databaseService->countRecentLoginAttempts($attemptId, self::LOGIN_LOCKOUT_WINDOW) >= self::MAX_LOGIN_ATTEMPTS) {
+            $this->logger->warning('Login blocked: too many attempts', ['username' => $username]);
+            return $response
+                ->withStatus(302)
+                ->withHeader('Location', '/auth/login?error=too_many_attempts');
+        }
+
         try {
             $userData = null;
-            
+
             // Authenticate based on selected method
             if ($authMethod === 'local') {
                 $userData = $this->localAuthService->authenticate($username, $password);
@@ -107,28 +125,32 @@ class AuthController
             }
             
             if (!$userData) {
+                $this->databaseService->recordLoginAttempt($attemptId);
                 $this->logger->warning('Failed login attempt', ['username' => $username, 'method' => $authMethod]);
                 return $response
                     ->withStatus(302)
                     ->withHeader('Location', '/auth/login?error=invalid_credentials');
             }
-            
+
+            // Successful login clears the throttle counter.
+            $this->databaseService->clearLoginAttempts($attemptId);
+
             // Create session
             $sessionId = $this->generateSessionId();
-            $this->databaseService->createSession($sessionId, $userData, 3600 * 8); // 8 hours
-            
+            $this->databaseService->createSession($sessionId, $userData, self::SESSION_LIFETIME);
+
             $this->logger->info('User logged in', [
                 'username' => $username,
                 'email' => $userData['email'],
                 'method' => $authMethod
             ]);
-            
+
             // Set cookie and redirect
             $response = $response
                 ->withStatus(302)
                 ->withHeader('Location', '/')
-                ->withHeader('Set-Cookie', "helpdesk_session={$sessionId}; Path=/; HttpOnly; SameSite=Strict; Max-Age=28800");
-            
+                ->withHeader('Set-Cookie', $this->buildSessionCookie($sessionId, self::SESSION_LIFETIME, $request));
+
             return $response;
             
         } catch (\Exception $e) {
@@ -156,7 +178,7 @@ class AuthController
         return $response
             ->withStatus(302)
             ->withHeader('Location', '/auth/login')
-            ->withHeader('Set-Cookie', 'helpdesk_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0');
+            ->withHeader('Set-Cookie', $this->buildSessionCookie('', 0, $request));
     }
     
     public function showRegister(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -169,7 +191,7 @@ class AuthController
         }
         
         // If authentication is disabled, redirect to main form
-        if ($_ENV['DISABLE_AUTH'] === 'true') {
+        if (($_ENV['DISABLE_AUTH'] ?? '') === 'true') {
             return $response
                 ->withStatus(302)
                 ->withHeader('Location', '/');
@@ -223,22 +245,22 @@ class AuthController
         ];
         
         if (empty($username) || empty($email) || empty($name) || empty($password)) {
-            return $this->renderRegisterError($response, 'missing_fields', $oldValues);
+            return $this->renderRegisterError($request, $response, 'missing_fields', $oldValues);
         }
         
         // Validate email format
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return $this->renderRegisterError($response, 'invalid_email', $oldValues);
+            return $this->renderRegisterError($request, $response, 'invalid_email', $oldValues);
         }
         
         // Validate password length
         if (strlen($password) < 8) {
-            return $this->renderRegisterError($response, 'password_too_short', $oldValues);
+            return $this->renderRegisterError($request, $response, 'password_too_short', $oldValues);
         }
         
         // Validate passwords match
         if ($password !== $passwordConfirm) {
-            return $this->renderRegisterError($response, 'password_mismatch', $oldValues);
+            return $this->renderRegisterError($request, $response, 'password_mismatch', $oldValues);
         }
         
         try {
@@ -268,9 +290,9 @@ class AuthController
             $errorMessage = $e->getMessage();
             
             if (strpos($errorMessage, 'Username already exists') !== false) {
-                return $this->renderRegisterError($response, 'username_exists', $oldValues);
+                return $this->renderRegisterError($request, $response, 'username_exists', $oldValues);
             } elseif (strpos($errorMessage, 'Email already exists') !== false) {
-                return $this->renderRegisterError($response, 'email_exists', $oldValues);
+                return $this->renderRegisterError($request, $response, 'email_exists', $oldValues);
             }
             
             $this->logger->error('Registration error', [
@@ -278,7 +300,7 @@ class AuthController
                 'error' => $errorMessage
             ]);
             
-            return $this->renderRegisterError($response, 'system_error', $oldValues);
+            return $this->renderRegisterError($request, $response, 'system_error', $oldValues);
             
         } catch (\Exception $e) {
             $this->logger->error('Registration system error', [
@@ -286,36 +308,66 @@ class AuthController
                 'error' => $e->getMessage()
             ]);
             
-            return $this->renderRegisterError($response, 'system_error', $oldValues);
+            return $this->renderRegisterError($request, $response, 'system_error', $oldValues);
         }
     }
     
-    private function renderRegisterError(ResponseInterface $response, string $error, array $oldValues = []): ResponseInterface
+    private function renderRegisterError(ServerRequestInterface $request, ResponseInterface $response, string $error, array $oldValues = []): ResponseInterface
     {
         return $this->twig->render($response, 'auth/register.html', [
             'error' => $error,
             'old' => $oldValues,
-            'csrf_token' => bin2hex(random_bytes(32))
+            // Must match the token the ValidationMiddleware expects on resubmit,
+            // not a fresh random value (which would fail CSRF validation).
+            'csrf_token' => $this->generateCsrfToken($request)
         ]);
     }
-    
+
     private function getSessionId(ServerRequestInterface $request): ?string
     {
         $cookies = $request->getCookieParams();
         return $cookies['helpdesk_session'] ?? null;
     }
-    
+
     private function generateSessionId(): string
     {
         return bin2hex(random_bytes(32));
     }
-    
+
+    /**
+     * Build the session cookie string. Adds the Secure flag unless explicitly
+     * disabled (COOKIE_SECURE=false) or the request is plain HTTP on localhost,
+     * so the session cookie is not exposed over cleartext in production.
+     */
+    private function buildSessionCookie(string $sessionId, int $maxAge, ServerRequestInterface $request): string
+    {
+        $cookie = "helpdesk_session={$sessionId}; Path=/; HttpOnly; SameSite=Strict; Max-Age={$maxAge}";
+
+        $cookieSecure = strtolower($_ENV['COOKIE_SECURE'] ?? 'true');
+        $isHttps = strtolower($request->getUri()->getScheme()) === 'https';
+        if ($cookieSecure !== 'false' && ($isHttps || $cookieSecure === 'true')) {
+            $cookie .= '; Secure';
+        }
+
+        return $cookie;
+    }
+
+    /**
+     * Stable per-(username, client IP) identifier used for login throttling.
+     */
+    private function loginAttemptIdentifier(string $username): string
+    {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
+        return hash('sha256', strtolower(trim($username)) . '|' . $ip);
+    }
+
     private function generateCsrfToken(ServerRequestInterface $request): string
     {
-        // For login page (no session yet), use a temporary identifier from cookie or create one
+        // For login/register pages (no session yet), use a temporary identifier
+        // from the cookie or the client IP.
         $cookies = $request->getCookieParams();
         $tempId = $cookies['helpdesk_session'] ?? 'login-' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown');
-        
-        return hash_hmac('sha256', $tempId, $_ENV['CSRF_SECRET'] ?? 'default_secret');
+
+        return hash_hmac('sha256', $tempId, $_ENV['CSRF_SECRET']);
     }
 }

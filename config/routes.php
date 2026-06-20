@@ -16,7 +16,6 @@ return function (App $app) {
     $app->get('/auth/register', [AuthController::class, 'showRegister'])->setName('auth.register');
     $app->post('/auth/register', [AuthController::class, 'processRegister'])->setName('auth.register.process');
     $app->post('/auth/logout', [AuthController::class, 'logout'])->setName('auth.logout');
-    $app->get('/auth/logout', [AuthController::class, 'logout'])->setName('auth.logout.get');
     
     // Main routes (with auth middleware)
     $app->get('/', [FormController::class, 'index'])->setName('home')->add(AuthMiddleware::class);

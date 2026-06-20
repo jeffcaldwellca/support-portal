@@ -90,8 +90,14 @@ DISABLE_AUTH=false
 # LDAP Configuration (if ENABLE_LDAP_AUTH=true)
 LDAP_HOST=ldap.yourdomain.com
 LDAP_PORT=389
+LDAP_ENCRYPTION=tls   # tls (StartTLS) | ssl (LDAPS) | none — defaults to tls
 LDAP_BASE_DN=dc=yourdomain,dc=com
 # ... (see .env.example for all options)
+
+# Security (REQUIRED)
+# The app refuses to start without a real CSRF_SECRET.
+CSRF_SECRET=          # php -r "echo bin2hex(random_bytes(32));"
+COOKIE_SECURE=true    # set to false only for local HTTP development
 
 # Application
 APP_DEBUG=false
@@ -183,6 +189,15 @@ server {
 | `FREESCOUT_API_URL` | Yes | - | The base URL for your FreeScout API (e.g., `https://helpdesk.example.com/api`) |
 | `FREESCOUT_API_KEY` | Yes | - | API key generated in FreeScout Admin > Manage > API |
 | `FREESCOUT_MAILBOX_ID` | Recommended | Auto-detect | The numeric ID of the FreeScout mailbox to submit tickets to. If not set, the application will attempt to use the first available mailbox from the API. |
+| `FREESCOUT_CACHE_TTL` | No | `30` | Seconds to cache a user's ticket list, avoiding a blocking API call on every page load. `0` disables caching. |
+
+### Security & Auth Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `CSRF_SECRET` | Yes | - | Secret for CSRF token HMAC. App refuses to boot if unset/placeholder. Generate with `php -r "echo bin2hex(random_bytes(32));"`. |
+| `COOKIE_SECURE` | No | `true` | Adds the `Secure` flag to the session cookie. Set `false` only for local HTTP dev. |
+| `LDAP_ENCRYPTION` | No | `tls` | LDAP transport: `tls` (StartTLS), `ssl` (LDAPS), or `none`. Avoid `none` outside trusted networks. |
 
 **Finding your Mailbox ID:**
 - Navigate to FreeScout Admin > Manage > Mailboxes
@@ -321,7 +336,8 @@ Each ticket shows:
 
 ```bash
 # Using PHP built-in server (development only)
-php -S localhost:8000 -t public
+php -S localhost:8000 -t public public/router.php
+```
 
 ### Running Tests
 
@@ -329,14 +345,26 @@ php -S localhost:8000 -t public
 composer test
 ```
 
+## Maintenance
+
+Expired sessions/drafts, old uploads, stale temporary files, and expired caches
+are removed by a maintenance script. Schedule it (e.g. every 15 minutes) via cron:
+
+```cron
+*/15 * * * * php /var/www/html/bin/cleanup.php >> /var/www/html/logs/cleanup.log 2>&1
+```
+
 ## Security Considerations
 
 - **API Keys** - Store in `.env`, never commit to version control
-- **LDAP Credentials** - Use service account with minimal permissions
-- **File Uploads** - Validate file types and sizes
-- **Database** - SQLite file should be read-only by web server (600 permissions)
-- **HTTPS** - Always use HTTPS in production
-- **Session Security** - HttpOnly and Secure flags enabled on cookies
+- **CSRF Secret** - `CSRF_SECRET` is required; the app refuses to boot without a real value
+- **LDAP** - Bind over TLS (`LDAP_ENCRYPTION=tls`/`ssl`); credentials and the username filter are escaped
+- **File Uploads** - Type/size/content validated on all paths (submissions and ticket replies)
+- **Database** - SQLite file should be read-only by web server where possible
+- **HTTPS** - Always use HTTPS in production; keep `COOKIE_SECURE=true`
+- **Session Security** - Cookies are `HttpOnly`, `SameSite=Strict`, and `Secure`
+- **Brute force** - Login attempts are throttled per username + IP
+- **Headers** - CSP and hardening headers are sent on every response
 
 ## Support
 

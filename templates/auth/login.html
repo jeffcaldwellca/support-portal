@@ -26,6 +26,8 @@
                             Please enter both username and password.
                         {% elseif error == 'invalid_credentials' %}
                             Invalid username or password. Please try again.
+                        {% elseif error == 'too_many_attempts' %}
+                            Too many failed login attempts. Please wait a few minutes and try again.
                         {% elseif error == 'system_error' %}
                             A system error occurred. Please try again later.
                         {% elseif error == 'ldap_disabled' %}

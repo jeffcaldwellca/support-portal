@@ -30,27 +30,22 @@ class LocalAuthService
         }
         
         if (!$user) {
-            error_log("Local auth: User not found: {$username}");
             return null;
         }
-        
+
         // Check if account is active
         if (!$user['is_active']) {
-            error_log("Local auth: Account disabled: {$username}");
             return null;
         }
-        
+
         // Verify password
         if (!password_verify($password, $user['password_hash'])) {
-            error_log("Local auth: Invalid password for: {$username}");
             return null;
         }
-        
+
         // Update last login
         $this->databaseService->updateLocalUserLastLogin($user['id']);
-        
-        error_log("Local auth: Successful login: {$username}");
-        
+
         // Return user data in the same format as LDAP
         return [
             'username' => $user['username'],

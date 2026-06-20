@@ -17,13 +17,19 @@ class FreeScoutService
     private array $mappings;
     private ?array $fieldDefinitions = null;
     private ?int $mailboxId = null;
-    
-    public function __construct(string $apiUrl, string $apiKey, LoggerInterface $logger, ?array $mappings = null, ?array $fieldDefinitions = null, ?int $mailboxId = null)
+    private ?ConfigService $configService = null;
+    private string $cacheDir;
+    private int $conversationsCacheTtl;
+
+    public function __construct(string $apiUrl, string $apiKey, LoggerInterface $logger, ?array $mappings = null, ?array $fieldDefinitions = null, ?int $mailboxId = null, ?ConfigService $configService = null)
     {
         $this->apiUrl = rtrim($apiUrl, '/');
         $this->apiKey = $apiKey;
         $this->logger = $logger;
         $this->mailboxId = $mailboxId;
+        $this->configService = $configService;
+        $this->cacheDir = __DIR__ . '/../../tmp/cache';
+        $this->conversationsCacheTtl = (int) ($_ENV['FREESCOUT_CACHE_TTL'] ?? 30);
         
         // Load mappings from config file or use provided mappings
         if ($mappings === null) {
@@ -162,27 +168,33 @@ class FreeScoutService
     public function createConversation(array $data): array
     {
         try {
-            $this->logger->info('Creating FreeScout conversation', ['data' => $data]);
-            
+            // Log identifying metadata only — not the full payload, which
+            // contains the requester's PII and free-text ticket body.
+            $this->logger->info('Creating FreeScout conversation', [
+                'subject' => $data['subject'] ?? null,
+                'mailboxId' => $data['mailboxId'] ?? null,
+                'customer_email' => $data['customer']['email'] ?? null,
+            ]);
+
             $response = $this->client->post('conversations', [
                 'json' => $data
             ]);
-            
+
             $result = json_decode($response->getBody()->getContents(), true);
-            
+
             $this->logger->info('FreeScout conversation created', [
-                'response' => $result,
+                'conversation_id' => $result['id'] ?? ($result['_embedded']['conversation']['id'] ?? null),
                 'status' => $response->getStatusCode()
             ]);
-            
+
             return $result;
-            
+
         } catch (GuzzleException $e) {
             $this->logger->error('Failed to create FreeScout conversation', [
                 'error' => $e->getMessage(),
-                'data' => $data
+                'subject' => $data['subject'] ?? null,
             ]);
-            
+
             throw new \RuntimeException('Failed to create ticket: ' . $e->getMessage());
         }
     }
@@ -207,36 +219,92 @@ class FreeScoutService
     
     public function getCustomerConversations(string $customerEmail): array
     {
+        // Serve a recent cached result if available, to avoid a blocking remote
+        // API call on every page load.
+        $cached = $this->readConversationsCache($customerEmail);
+        if ($cached !== null) {
+            return $cached;
+        }
+
         try {
             $response = $this->client->get('conversations', [
                 'query' => [
                     'customerEmail' => $customerEmail,
                     'sortField' => 'updatedAt',
                     'sortOrder' => 'desc',
-                    'pageSize' => 100
+                    'pageSize' => 25
                 ]
             ]);
-            
+
             $result = json_decode($response->getBody()->getContents(), true);
             $conversations = $result['_embedded']['conversations'] ?? [];
-            
+
             // Filter out deleted tickets (state = 5) and spam (state = 4)
             $conversations = array_filter($conversations, function($conversation) {
                 $state = $conversation['state'] ?? 0;
                 // Exclude deleted (5) and spam (4) tickets
                 return !in_array($state, [4, 5]);
             });
-            
+
             // Filter each conversation to remove internal data
-            return array_map([$this, 'filterConversationForCustomer'], $conversations);
-            
+            $filtered = array_values(array_map([$this, 'filterConversationForCustomer'], $conversations));
+
+            $this->writeConversationsCache($customerEmail, $filtered);
+
+            return $filtered;
+
         } catch (GuzzleException $e) {
             $this->logger->error('Failed to get customer conversations', [
                 'email' => $customerEmail,
                 'error' => $e->getMessage()
             ]);
-            
+
             return [];
+        }
+    }
+
+    private function conversationsCacheFile(string $customerEmail): string
+    {
+        return $this->cacheDir . '/freescout_conv_' . hash('sha256', strtolower($customerEmail)) . '.json';
+    }
+
+    private function readConversationsCache(string $customerEmail): ?array
+    {
+        if ($this->conversationsCacheTtl <= 0) {
+            return null;
+        }
+
+        $file = $this->conversationsCacheFile($customerEmail);
+        if (!is_file($file) || (time() - filemtime($file)) > $this->conversationsCacheTtl) {
+            return null;
+        }
+
+        $decoded = json_decode((string) file_get_contents($file), true);
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    private function writeConversationsCache(string $customerEmail, array $conversations): void
+    {
+        if ($this->conversationsCacheTtl <= 0) {
+            return;
+        }
+
+        if (!is_dir($this->cacheDir)) {
+            @mkdir($this->cacheDir, 0775, true);
+        }
+
+        @file_put_contents($this->conversationsCacheFile($customerEmail), json_encode($conversations));
+    }
+
+    /**
+     * Invalidate the cached conversation list for a customer (e.g. right after
+     * they create a ticket or post a reply), so fresh data is fetched next load.
+     */
+    public function clearCustomerConversationsCache(string $customerEmail): void
+    {
+        $file = $this->conversationsCacheFile($customerEmail);
+        if (is_file($file)) {
+            @unlink($file);
         }
     }
     
@@ -685,6 +753,23 @@ class FreeScoutService
         return $body;
     }
     
+    /**
+     * Return the ConfigService, using the injected instance when available and
+     * lazily creating (and caching) one otherwise so the YAML is parsed at most
+     * once per request rather than on every ticket build.
+     */
+    private function getConfigService(): ?ConfigService
+    {
+        if ($this->configService === null) {
+            $yamlPath = __DIR__ . '/../../config/form_fields.yaml';
+            if (is_file($yamlPath)) {
+                $this->configService = new ConfigService($yamlPath);
+            }
+        }
+
+        return $this->configService;
+    }
+
     private function buildTags(string $requestType): array
     {
         $tags = [];
@@ -695,9 +780,8 @@ class FreeScoutService
         
         // Get tags from YAML config (takes priority)
         $yamlTags = [];
-        if (isset($this->fieldDefinitions)) {
-            // Extract tags from request type configuration
-            $configService = new ConfigService(__DIR__ . '/../../config/form_fields.yaml');
+        $configService = $this->getConfigService();
+        if ($configService !== null) {
             $yamlTags = $configService->getRequestTypeTags($requestType);
         }
         

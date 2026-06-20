@@ -11,6 +11,7 @@ use HelpdeskForm\Services\ConfigService;
 use HelpdeskForm\Services\DatabaseService;
 use HelpdeskForm\Services\FreeScoutService;
 use HelpdeskForm\Services\FileUploadService;
+use HelpdeskForm\Exceptions\UserFacingException;
 
 class FormController
 {
@@ -65,10 +66,10 @@ class FormController
         
         // Validate request type
         if (!in_array($type, $this->configService->getRequestTypes())) {
+            $response->getBody()->write('Request type not found');
             return $response
                 ->withStatus(404)
-                ->withHeader('Content-Type', 'text/plain')
-                ->write('Request type not found');
+                ->withHeader('Content-Type', 'text/plain');
         }
         
         // Get form configuration
@@ -87,7 +88,7 @@ class FormController
             'settings' => $settings,
             'autosaved_data' => $autosavedData,
             'csrf_token' => $this->generateCsrfToken($request),
-            'auth_disabled' => $_ENV['DISABLE_AUTH'] === 'true'
+            'auth_disabled' => ($_ENV['DISABLE_AUTH'] ?? '') === 'true'
         ]);
     }
     
@@ -99,14 +100,14 @@ class FormController
         $formData = $request->getParsedBody();
         
         try {
-            // Check for duplicate submission (rate limiting)
-            if (isset($_SESSION['last_submission_time'])) {
-                $timeSinceLastSubmission = time() - $_SESSION['last_submission_time'];
-                if ($timeSinceLastSubmission < 5) { // 5 second cooldown
-                    throw new \RuntimeException('Please wait a moment before submitting another request.');
-                }
+            // Server-side submission throttle (5s cooldown per requester),
+            // backed by the submissions table so it actually persists across
+            // requests (the previous $_SESSION check never fired — sessions are
+            // not started in this app).
+            if ($this->databaseService->hasRecentSubmission($user['email'], 5)) {
+                throw new UserFacingException('Please wait a moment before submitting another request.');
             }
-            
+
             // Validate form data
             $this->validateFormData($type, $formData);
             
@@ -181,17 +182,16 @@ class FormController
                 
                 // Clear autosaved data
                 $this->databaseService->saveAutosaveData($sessionId, $type, [], 0);
-                
+
+                // Invalidate the cached ticket list so the new ticket shows up.
+                $this->freeScoutService->clearCustomerConversationsCache($user['email']);
+
                 $this->logger->info('Form submitted successfully', [
                     'submission_uuid' => $submissionUuid,
                     'ticket_id' => $ticketId,
                     'user_email' => $user['email']
                 ]);
-                
-                // Store submission UUID and timestamp in session to prevent duplicates
-                $_SESSION['last_submission'] = $submissionUuid;
-                $_SESSION['last_submission_time'] = time();
-                
+
                 // Return JSON response for AJAX submission
                 $payload = json_encode([
                     'success' => true,
@@ -218,22 +218,24 @@ class FormController
                 'user_email' => $user['email'],
                 'request_type' => $type
             ]);
-            
+
             // Update submission status
             if (isset($submissionUuid)) {
                 $this->databaseService->updateSubmissionStatus($submissionUuid, 'failed');
             }
-            
-            // Return JSON error for AJAX submission
+
+            // Only surface user-facing messages (validation/throttle); everything
+            // else returns a generic message so internals are not disclosed.
+            $isUserFacing = $e instanceof UserFacingException;
             $payload = json_encode([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => $isUserFacing ? $e->getMessage() : 'Unable to submit your request. Please try again or contact support.'
             ]);
-            
+
             $response->getBody()->write($payload);
             return $response
                 ->withHeader('Content-Type', 'application/json')
-                ->withStatus(500);
+                ->withStatus($isUserFacing ? 400 : 500);
         }
     }
     
@@ -252,16 +254,16 @@ class FormController
             
             // Verify user owns this submission
             if (strcasecmp($submission['requester_email'], $user['email']) !== 0) {
+                $response->getBody()->write('Access denied');
                 return $response
                     ->withStatus(403)
-                    ->withHeader('Content-Type', 'text/plain')
-                    ->write('Access denied');
+                    ->withHeader('Content-Type', 'text/plain');
             }
-            
+
             // Get ticket from FreeScout
             $ticket = null;
-            if ($submission['ticket_id']) {
-                $ticket = $this->freeScoutService->getConversation($submission['ticket_id']);
+            if (!empty($submission['freescout_ticket_id'])) {
+                $ticket = $this->freeScoutService->getConversation((int) $submission['freescout_ticket_id']);
             }
             
             return $this->twig->render($response, 'form/success.html', [
@@ -371,37 +373,25 @@ class FormController
                 ]);
             }
             
-            // Handle file uploads
+            // Handle file uploads through the shared FileUploadService so reply
+            // attachments get the same validation (type allow-list, size, and
+            // content checks) as form submissions — the previous inline handler
+            // accepted arbitrary extensions.
             $uploadedFiles = [];
             $files = $request->getUploadedFiles()['attachments'] ?? [];
-            
+
             if (!empty($files)) {
                 foreach ($files as $uploadedFile) {
                     if ($uploadedFile->getError() === UPLOAD_ERR_OK) {
-                        $filename = $uploadedFile->getClientFilename();
-                        $fileSize = $uploadedFile->getSize();
-                        
-                        // Validate file size (10MB max)
-                        if ($fileSize > 10 * 1024 * 1024) {
-                            $this->logger->warning('File too large in reply', [
-                                'filename' => $filename,
-                                'size' => $fileSize
+                        try {
+                            $uploadedFiles[] = $this->fileUploadService->uploadFile($uploadedFile, 'reply_' . $ticketId);
+                        } catch (\RuntimeException $e) {
+                            // Skip invalid attachments but keep processing the reply.
+                            $this->logger->warning('Reply attachment rejected', [
+                                'ticket_id' => $ticketId,
+                                'error' => $e->getMessage()
                             ]);
-                            continue;
                         }
-                        
-                        // Generate unique filename
-                        $extension = pathinfo($filename, PATHINFO_EXTENSION);
-                        $safeFilename = uniqid() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $filename);
-                        $uploadPath = __DIR__ . '/../../uploads/' . $safeFilename;
-                        
-                        $uploadedFile->moveTo($uploadPath);
-                        
-                        $uploadedFiles[] = [
-                            'file_path' => $uploadPath,
-                            'original_filename' => $filename,
-                            'size' => $fileSize
-                        ];
                     }
                 }
             }
@@ -435,26 +425,29 @@ class FormController
             
             // Add thread to conversation
             $this->freeScoutService->addThread($ticketId, $threadData);
-            
+
+            // Invalidate the cached ticket list so the reply is reflected.
+            $this->freeScoutService->clearCustomerConversationsCache($user['email']);
+
             $this->logger->info('Customer reply added to ticket', [
                 'ticket_id' => $ticketId,
                 'user_email' => $user['email'],
                 'has_attachments' => !empty($uploadedFiles)
             ]);
-            
+
             // Redirect back to ticket page
             return $response
                 ->withStatus(302)
                 ->withHeader('Location', "/ticket/{$ticketId}?reply=success");
-            
+
         } catch (\Exception $e) {
             $this->logger->error('Failed to add reply to ticket', [
                 'ticket_id' => $ticketId,
                 'error' => $e->getMessage()
             ]);
-            
+
             return $this->twig->render($response->withStatus(500), 'form/error.html', [
-                'error' => 'Failed to send reply: ' . $e->getMessage(),
+                'error' => 'Failed to send reply. Please try again or contact support.',
                 'user' => $user
             ]);
         }
@@ -515,17 +508,22 @@ class FormController
             return $response->withHeader('Content-Type', 'application/json');
             
         } catch (\Exception $e) {
+            $this->logger->error('Autosave failed', [
+                'error' => $e->getMessage(),
+                'request_type' => $requestType
+            ]);
+
             $response->getBody()->write(json_encode([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'Unable to save draft.'
             ]));
-            
+
             return $response
                 ->withStatus(500)
                 ->withHeader('Content-Type', 'application/json');
         }
     }
-    
+
     public function getAutosave(ServerRequestInterface $request, ResponseInterface $response, array $args): ResponseInterface
     {
         $sessionId = $request->getAttribute('session_id');
@@ -552,7 +550,7 @@ class FormController
             
             // Check required fields
             if ($isRequired && (empty($value) && $value !== '0')) {
-                throw new \RuntimeException("Field '{$field['label']}' is required");
+                throw new UserFacingException("Field '{$field['label']}' is required");
             }
             
             // Validate based on field type
@@ -569,16 +567,16 @@ class FormController
         switch ($type) {
             case 'email':
                 if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                    throw new \RuntimeException("Invalid email format for '{$field['label']}'");
+                    throw new UserFacingException("Invalid email format for '{$field['label']}'");
                 }
                 break;
-                
+
             case 'date':
                 if (!strtotime($value)) {
-                    throw new \RuntimeException("Invalid date format for '{$field['label']}'");
+                    throw new UserFacingException("Invalid date format for '{$field['label']}'");
                 }
                 break;
-                
+
             case 'text':
             case 'textarea':
                 if (isset($field['validation'])) {
@@ -587,7 +585,7 @@ class FormController
                         if (strpos($rule, 'max:') === 0) {
                             $max = (int)substr($rule, 4);
                             if (strlen($value) > $max) {
-                                throw new \RuntimeException("'{$field['label']}' exceeds maximum length of {$max} characters");
+                                throw new UserFacingException("'{$field['label']}' exceeds maximum length of {$max} characters");
                             }
                         }
                     }
@@ -608,7 +606,7 @@ class FormController
         }
         
         // Fallback for development mode
-        if (!$sessionId && $_ENV['DISABLE_AUTH'] === 'true') {
+        if (!$sessionId && ($_ENV['DISABLE_AUTH'] ?? '') === 'true') {
             $sessionId = 'dev-session-' . date('Y-m-d');
         }
         
@@ -616,7 +614,7 @@ class FormController
         if (!$sessionId) {
             $sessionId = 'default';
         }
-        
-        return hash_hmac('sha256', $sessionId, $_ENV['CSRF_SECRET'] ?? 'default_secret');
+
+        return hash_hmac('sha256', $sessionId, $_ENV['CSRF_SECRET']);
     }
 }

@@ -34,7 +34,7 @@ return function (ContainerBuilder $containerBuilder) {
             $logger->pushHandler($fileHandler);
             
             // Add console handler in debug mode
-            if ($_ENV['APP_DEBUG'] === 'true') {
+            if (($_ENV['APP_DEBUG'] ?? '') === 'true') {
                 $streamHandler = new StreamHandler('php://stdout', Logger::DEBUG);
                 $logger->pushHandler($streamHandler);
             }
@@ -45,8 +45,8 @@ return function (ContainerBuilder $containerBuilder) {
         // Twig Template Engine
         Twig::class => function (ContainerInterface $c) {
             $twig = Twig::create(__DIR__ . '/../templates', [
-                'cache' => $_ENV['APP_DEBUG'] === 'true' ? false : __DIR__ . '/../tmp/cache',
-                'debug' => $_ENV['APP_DEBUG'] === 'true'
+                'cache' => ($_ENV['APP_DEBUG'] ?? '') === 'true' ? false : __DIR__ . '/../tmp/cache',
+                'debug' => ($_ENV['APP_DEBUG'] ?? '') === 'true'
             ]);
             
             // Add global branding variables
@@ -81,9 +81,14 @@ return function (ContainerBuilder $containerBuilder) {
         // LDAP Service
         LdapService::class => function (ContainerInterface $c) {
             return new LdapService([
-                'host' => $_ENV['LDAP_HOST'],
+                // LDAP may be unconfigured when only local auth is enabled; the
+                // service is still constructed, so read these defensively.
+                'host' => $_ENV['LDAP_HOST'] ?? '',
                 'port' => (int)($_ENV['LDAP_PORT'] ?? 389),
-                'base_dn' => $_ENV['LDAP_BASE_DN'],
+                'base_dn' => $_ENV['LDAP_BASE_DN'] ?? '',
+                // Transport encryption: 'tls' (StartTLS), 'ssl' (LDAPS), or 'none'.
+                // Defaults to 'tls' so credentials are not sent in cleartext.
+                'encryption' => $_ENV['LDAP_ENCRYPTION'] ?? 'tls',
                 // Service account credentials for LDAP binding (NOT user credentials)
                 'bind_dn' => $_ENV['LDAP_BIND_DN'] ?? null,
                 'bind_password' => $_ENV['LDAP_BIND_PASSWORD'] ?? null,
@@ -122,7 +127,8 @@ return function (ContainerBuilder $containerBuilder) {
                 $c->get(Logger::class),
                 $mappings,
                 $fieldDefinitions,
-                $mailboxId
+                $mailboxId,
+                $configService
             );
         },
         

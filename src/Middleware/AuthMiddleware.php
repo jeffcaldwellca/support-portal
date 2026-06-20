@@ -24,7 +24,7 @@ class AuthMiddleware implements MiddlewareInterface
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         // Check if authentication is disabled via environment variable
-        if ($_ENV['DISABLE_AUTH'] === 'true') {
+        if (($_ENV['DISABLE_AUTH'] ?? '') === 'true') {
             // Create a mock user session for disabled auth mode
             $request = $request->withAttribute('user', [
                 'username' => 'dev-user',

@@ -301,6 +301,26 @@ const FormHandler = {
         });
     },
 
+    // Safely evaluate a trigger condition without eval().
+    // Supports: `value == 'x'` / `value != 'x'` combined with `||` and `&&`.
+    evaluateCondition: function(condition, value) {
+        const evalFactor = (factor) => {
+            const m = factor.match(/^\s*value\s*(===?|!==?)\s*(['"])(.*?)\2\s*$/);
+            if (!m) {
+                throw new Error('Unsupported condition: ' + factor);
+            }
+            const operator = m[1];
+            const operand = m[3];
+            const isEqual = String(value) === operand;
+            return operator.startsWith('!') ? !isEqual : isEqual;
+        };
+
+        // OR of (AND of factors)
+        return condition.split('||').some(orPart =>
+            orPart.split('&&').every(andPart => evalFactor(andPart))
+        );
+    },
+
     // Handle conditional field triggers
     handleConditionalTriggers: function(triggerField, triggers) {
         const value = triggerField.value;
@@ -309,13 +329,11 @@ const FormHandler = {
             const condition = trigger.condition;
             const showFields = trigger.show_fields || [];
             
-            // Evaluate condition (simple implementation)
+            // Evaluate condition with a small safe parser (no eval).
             let showConditionalFields = false;
-            
+
             try {
-                // Replace 'value' with actual value in condition
-                const evalCondition = condition.replace(/value/g, `"${value}"`);
-                showConditionalFields = eval(evalCondition);
+                showConditionalFields = this.evaluateCondition(condition, value);
             } catch (e) {
                 console.error('Error evaluating condition:', condition, e);
             }

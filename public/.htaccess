@@ -11,7 +11,9 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [QSA,L]
 
-# Security headers
+# Security headers (kept in sync with SecurityHeadersMiddleware)
 Header always set X-Content-Type-Options nosniff
 Header always set X-Frame-Options DENY
-Header always set X-XSS-Protection "1; mode=block"
+Header always set Referrer-Policy same-origin
+# Modern guidance is to disable the legacy XSS auditor rather than enable it.
+Header always set X-XSS-Protection "0"
