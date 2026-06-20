@@ -17,6 +17,9 @@ pnpm-debug.log*
 .env
 .env.production
 
+# generated at prebuild — do not track
+public/og-image.png
+
 # macOS-specific files
 .DS_Store
 

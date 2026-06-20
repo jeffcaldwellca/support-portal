@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -27,6 +27,7 @@ jobs:
         uses: withastro/action@v6
         with:
           path: site
+          node-version: 24
   deploy:
     needs: build
     runs-on: ubuntu-latest
