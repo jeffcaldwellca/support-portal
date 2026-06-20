@@ -24,5 +24,8 @@
   "devDependencies": {
     "sharp": "^0.35.2",
     "vitest": "^4.1.9"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }
