@@ -1,0 +1,28 @@
+{
+  "name": "site",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "prebuild": "node scripts/gen-og.mjs",
+    "test": "vitest run",
+    "check:seo": "node scripts/check-seo.mjs",
+    "verify": "npm run build && npm run check:seo"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.3",
+    "@fontsource-variable/inter": "^5.2.8",
+    "@tailwindcss/vite": "^4.3.1",
+    "astro": "^6.4.7",
+    "tailwindcss": "^4.3.1"
+  },
+  "devDependencies": {
+    "sharp": "^0.35.2",
+    "vitest": "^4.1.9"
+  }
+}
