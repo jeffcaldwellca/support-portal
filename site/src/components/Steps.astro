@@ -1,0 +1,26 @@
+---
+const steps = [
+  { n: '1', t: 'User submits a request', d: 'They pick a request type and fill in a dynamic form tailored to it.' },
+  { n: '2', t: 'A ticket lands in FreeScout', d: 'The portal calls the FreeScout API and opens the ticket in your mailbox.' },
+  { n: '3', t: 'User tracks and replies', d: 'They follow status updates and reply in a two-way thread from their dashboard.' },
+];
+---
+<section class="mx-auto max-w-6xl px-4 py-20">
+  <div class="flex items-baseline gap-3">
+    <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">How it works</h2>
+    <span class="font-mono text-sm text-slate-400">3 steps</span>
+  </div>
+
+  <ol class="relative mt-12 grid gap-8 md:grid-cols-3 md:gap-6">
+    <div aria-hidden="true" class="absolute left-5 top-0 bottom-0 w-px bg-slate-200 md:left-[16.66%] md:right-[16.66%] md:top-5 md:bottom-auto md:h-px md:w-auto dark:bg-slate-800"></div>
+    {steps.map((s) => (
+      <li class="relative flex gap-4 md:flex-col md:gap-0 md:text-center">
+        <div class="relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand font-mono text-sm font-bold text-white ring-4 ring-white md:mx-auto dark:ring-slate-950">{s.n}</div>
+        <div class="md:mt-5">
+          <h3 class="text-lg font-semibold text-slate-900 dark:text-white">{s.t}</h3>
+          <p class="mt-1 max-w-xs text-sm leading-relaxed text-slate-600 md:mx-auto dark:text-slate-400">{s.d}</p>
+        </div>
+      </li>
+    ))}
+  </ol>
+</section>

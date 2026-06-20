@@ -1,0 +1,45 @@
+---
+import { SITE, withBase } from '../data/seo';
+const prereqs = [
+  'PHP 8.1+',
+  'A FreeScout instance with the API module',
+  'Docker (optional, but recommended)',
+];
+---
+<section class="dotgrid relative overflow-hidden bg-slate-900 dark:bg-slate-900">
+  <div aria-hidden="true" class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-brand to-transparent"></div>
+  <div class="relative mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 lg:grid-cols-2">
+    <div>
+      <p class="font-mono text-xs uppercase tracking-[0.2em] text-brand">Deploy</p>
+      <h2 class="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">Self-host it in minutes</h2>
+      <ul class="mt-8 space-y-3">
+        {prereqs.map((p) => (
+          <li class="flex items-center gap-3 text-slate-300">
+            <span class="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-400">
+              <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12 5 5L20 7"/></svg>
+            </span>
+            <span class="text-sm">{p}</span>
+          </li>
+        ))}
+      </ul>
+      <div class="mt-9 flex flex-wrap gap-3">
+        <a href={withBase('/docs/installation')} class="rounded-xl bg-brand px-5 py-3 font-semibold text-white transition hover:bg-brand-dark">Read the docs</a>
+        <a href={SITE.repo} class="rounded-xl border border-slate-700 px-5 py-3 font-semibold text-slate-100 transition hover:bg-slate-800">Star on GitHub</a>
+      </div>
+    </div>
+
+    <!-- faux terminal -->
+    <div class="overflow-hidden rounded-xl border border-slate-700/70 bg-slate-950/80 shadow-2xl shadow-black/40">
+      <div class="flex items-center gap-2 border-b border-slate-800 px-4 py-3">
+        <span class="h-3 w-3 rounded-full bg-rose-500/80"></span>
+        <span class="h-3 w-3 rounded-full bg-amber-500/80"></span>
+        <span class="h-3 w-3 rounded-full bg-emerald-500/80"></span>
+        <span class="ml-2 font-mono text-xs text-slate-500">bash</span>
+      </div>
+      <pre class="overflow-x-auto px-4 py-4 font-mono text-[13px] leading-relaxed"><code><span class="text-slate-500">$</span> <span class="text-slate-200">git clone {SITE.repo}.git</span>
+<span class="text-slate-500">$</span> <span class="text-slate-200">cd support-portal && cp .env.example .env</span>
+<span class="text-slate-500">$</span> <span class="text-slate-200">docker compose up -d</span>
+<span class="text-emerald-400">✔ portal running</span> <span class="text-slate-500">→</span> <span class="text-brand">http://localhost:8080</span></code></pre>
+    </div>
+  </div>
+</section>

@@ -1,16 +1,13 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Hero from '../components/Hero.astro';
-import FeatureCard from '../components/FeatureCard.astro';
-import { FEATURES } from '../data/features';
+import Features from '../components/Features.astro';
+import Steps from '../components/Steps.astro';
+import InstallBand from '../components/InstallBand.astro';
+import StubDivider from '../components/StubDivider.astro';
 import { FAQ_ITEMS } from '../data/faq';
 import { SITE, withBase, softwareApplicationLd, webSiteLd } from '../data/seo';
 
-const steps = [
-  { n: '1', t: 'User submits a request', d: 'They pick a request type and fill in a dynamic form tailored to it.' },
-  { n: '2', t: 'A ticket is created in FreeScout', d: 'The portal calls the FreeScout API and creates the ticket in your mailbox.' },
-  { n: '3', t: 'User tracks and replies', d: 'They watch status updates and reply in a two-way thread from their dashboard.' },
-];
 const jsonLd = [softwareApplicationLd(), webSiteLd()];
 ---
 <BaseLayout
@@ -21,48 +18,60 @@ const jsonLd = [softwareApplicationLd(), webSiteLd()];
 >
   <Hero />
 
-  <section id="features" class="mx-auto max-w-6xl px-4 py-16">
-    <h2 class="text-center text-3xl font-bold text-slate-900 dark:text-white">Everything your users need</h2>
-    <p class="mx-auto mt-3 max-w-2xl text-center text-slate-600 dark:text-slate-400">A focused front door to FreeScout, built for end users.</p>
-    <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {FEATURES.map((f) => <FeatureCard title={f.title} blurb={f.blurb} icon={f.icon} />)}
+  <StubDivider />
+
+  <Features />
+
+  <!-- See it in action: the real screenshot in a browser frame -->
+  <section class="mx-auto max-w-6xl px-4 py-20">
+    <div class="flex items-baseline gap-3">
+      <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">See it in action</h2>
+      <span class="font-mono text-sm text-slate-400">live preview</span>
+    </div>
+    <div class="mt-10 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40">
+      <div class="flex items-center gap-2 border-b border-slate-200 px-4 py-3 dark:border-slate-800">
+        <span class="h-3 w-3 rounded-full bg-rose-400"></span>
+        <span class="h-3 w-3 rounded-full bg-amber-400"></span>
+        <span class="h-3 w-3 rounded-full bg-emerald-400"></span>
+        <span class="mx-auto rounded-md bg-slate-100 px-3 py-1 font-mono text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">portal.yourcompany.com</span>
+      </div>
+      <img
+        src={withBase('/screenshot.png')}
+        alt="Support Portal showing the request-type selection screen with onboarding, technical problem and change request cards"
+        width="1370" height="527"
+        class="w-full"
+        loading="lazy"
+      />
     </div>
   </section>
 
-  <section class="mx-auto max-w-6xl px-4 py-16">
-    <h2 class="text-center text-3xl font-bold text-slate-900 dark:text-white">How it works</h2>
-    <div class="mt-10 grid gap-6 md:grid-cols-3">
-      {steps.map((s) => (
-        <div class="rounded-2xl border border-slate-200 p-6 dark:border-slate-800">
-          <div class="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-brand font-bold text-white">{s.n}</div>
-          <h3 class="text-lg font-semibold text-slate-900 dark:text-white">{s.t}</h3>
-          <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">{s.d}</p>
+  <StubDivider />
+
+  <Steps />
+
+  <!-- FAQ — asymmetric: prompt on the left, answers on the right -->
+  <section class="mx-auto max-w-6xl px-4 py-20">
+    <div class="grid gap-10 lg:grid-cols-3">
+      <div class="lg:col-span-1">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">Questions?</h2>
+        <p class="mt-3 text-slate-600 dark:text-slate-400">The short answers. The rest live on the full FAQ.</p>
+        <a class="mt-4 inline-flex items-center gap-1 font-semibold text-brand hover:underline" href={withBase('/faq')}>See all FAQs <span aria-hidden="true">→</span></a>
+      </div>
+      <div class="lg:col-span-2">
+        <div class="divide-y divide-slate-200 border-t border-slate-200 dark:divide-slate-800 dark:border-slate-800">
+          {FAQ_ITEMS.slice(0, 4).map((it) => (
+            <details class="group py-5">
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-medium text-slate-900 dark:text-white">
+                {it.q}
+                <svg class="h-5 w-5 shrink-0 text-slate-400 transition-transform group-open:rotate-45" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              </summary>
+              <p class="mt-3 text-sm leading-relaxed text-slate-600 dark:text-slate-400">{it.a}</p>
+            </details>
+          ))}
         </div>
-      ))}
-    </div>
-  </section>
-
-  <section class="mx-auto max-w-3xl px-4 py-16">
-    <h2 class="text-center text-3xl font-bold text-slate-900 dark:text-white">Frequently asked questions</h2>
-    <div class="mt-8 divide-y divide-slate-200 dark:divide-slate-800">
-      {FAQ_ITEMS.slice(0, 4).map((it) => (
-        <details class="group py-4">
-          <summary class="cursor-pointer list-none font-medium text-slate-900 dark:text-white">{it.q}</summary>
-          <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">{it.a}</p>
-        </details>
-      ))}
-    </div>
-    <p class="mt-6 text-center text-sm"><a class="font-semibold text-brand hover:underline" href={withBase('/faq')}>See all FAQs →</a></p>
-  </section>
-
-  <section class="mx-auto max-w-6xl px-4 py-16 text-center">
-    <div class="rounded-3xl bg-slate-900 px-6 py-14 dark:bg-slate-900">
-      <h2 class="text-3xl font-bold text-white">Self-host it in minutes</h2>
-      <p class="mx-auto mt-3 max-w-xl text-slate-300">PHP 8.1+, a FreeScout instance with the API module, and you're live. Docker supported.</p>
-      <div class="mt-8 flex flex-wrap justify-center gap-3">
-        <a href={withBase('/docs/installation')} class="rounded-xl bg-brand px-5 py-3 font-semibold text-white hover:bg-brand-dark">Read the docs</a>
-        <a href={SITE.repo} class="rounded-xl border border-slate-600 px-5 py-3 font-semibold text-white hover:bg-slate-800">Star on GitHub</a>
       </div>
     </div>
   </section>
+
+  <InstallBand />
 </BaseLayout>

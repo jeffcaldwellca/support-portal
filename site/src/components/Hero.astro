@@ -1,28 +1,92 @@
 ---
 import { SITE, withBase } from '../data/seo';
 ---
-<section class="mx-auto max-w-6xl px-4 pb-10 pt-16 text-center sm:pt-24">
-  <a href={SITE.repo} class="mb-6 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-    Free &amp; open-source · GPL v3
-  </a>
-  <h1 class="mx-auto max-w-3xl text-4xl font-extrabold tracking-tight text-slate-900 sm:text-5xl dark:text-white">
-    A friendly customer portal for <span class="text-brand">FreeScout</span>
-  </h1>
-  <p class="mx-auto mt-5 max-w-2xl text-lg text-slate-600 dark:text-slate-400">
-    Support Portal is a self-hosted, open-source end-user portal for FreeScout. Give your users a clean
-    form-based way to submit tickets, attach files, and track status — without exposing the agent UI.
-  </p>
-  <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
-    <a href={withBase('/docs/installation')} class="rounded-xl bg-brand px-5 py-3 font-semibold text-white shadow-sm hover:bg-brand-dark">Get started</a>
-    <a href={SITE.repo} class="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">View on GitHub</a>
-  </div>
-  <div class="mt-14">
-    <img
-      src={withBase('/screenshot.png')}
-      alt="Support Portal showing the request-type selection screen with onboarding, technical problem and change request cards"
-      width="1370" height="527"
-      class="mx-auto w-full max-w-5xl rounded-2xl border border-slate-200 shadow-xl dark:border-slate-800"
-      loading="eager"
-    />
+<section class="dotgrid relative overflow-hidden">
+  <!-- brand glow, kept faint so it reads as atmosphere not decoration -->
+  <div class="pointer-events-none absolute -top-32 left-1/2 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-brand/10 blur-3xl dark:bg-brand/20"></div>
+
+  <div class="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-16 sm:pt-24 lg:grid-cols-12 lg:gap-8 lg:pb-24">
+    <!-- Left: editorial, left-aligned -->
+    <div class="lg:col-span-7">
+      <p class="font-mono text-xs font-medium uppercase tracking-[0.2em] text-brand">
+        Self-hosted · GPL-3.0
+      </p>
+      <h1 class="mt-5 max-w-2xl text-4xl font-extrabold leading-[1.05] tracking-tight text-slate-900 sm:text-6xl dark:text-white">
+        A friendly support<br class="hidden sm:block" /> portal for
+        <span class="relative whitespace-nowrap text-brand">FreeScout
+          <svg class="absolute -bottom-1 left-0 h-2 w-full text-brand/40" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><path d="M1 5.5C20 2 45 1.5 99 4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+        </span>
+      </h1>
+      <p class="mt-6 max-w-xl text-lg leading-relaxed text-slate-600 dark:text-slate-400">
+        Give your users a clean, form-based front door to FreeScout — submit tickets,
+        attach files, and track status, without ever touching the agent UI.
+      </p>
+      <div class="mt-8 flex flex-wrap items-center gap-3">
+        <a href={withBase('/docs/installation')} class="rounded-xl bg-brand px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-brand-dark">Get started</a>
+        <a href={SITE.repo} class="rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-800 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">View on GitHub</a>
+      </div>
+      <ul class="mt-8 flex flex-wrap gap-x-5 gap-y-2 font-mono text-xs text-slate-500 dark:text-slate-500">
+        <li class="flex items-center gap-1.5"><span class="text-brand">+</span> PHP 8.1+</li>
+        <li class="flex items-center gap-1.5"><span class="text-brand">+</span> Docker-ready</li>
+        <li class="flex items-center gap-1.5"><span class="text-brand">+</span> LDAP / local auth</li>
+      </ul>
+    </div>
+
+    <!-- Right: the signature — a live support ticket -->
+    <div class="relative lg:col-span-5">
+      <!-- card peeking behind for depth -->
+      <div class="absolute -right-3 -top-5 hidden w-full rounded-2xl border border-slate-200 bg-white/70 px-5 py-3 shadow-sm sm:block dark:border-slate-800 dark:bg-slate-900/70" aria-hidden="true">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-xs text-slate-400">#1042</span>
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2 py-0.5 font-mono text-[10px] font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">○ Pending</span>
+        </div>
+      </div>
+
+      <!-- front ticket card -->
+      <div class="relative rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5 sm:rotate-[-1.2deg] dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/40">
+        <!-- header -->
+        <div class="flex items-center justify-between px-5 py-4">
+          <div class="flex items-center gap-2.5 text-slate-900 dark:text-white">
+            <svg viewBox="0 0 24 18" class="h-5 w-7" fill="none" aria-hidden="true">
+              <path d="M5 2.5h14a2 2 0 0 1 2 2v2.4a2 2 0 0 0 0 4.2v2.4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2.4a2 2 0 0 0 0-4.2V4.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.6"/>
+            </svg>
+            <span class="font-mono text-sm font-medium">#1043</span>
+          </div>
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-mono text-[11px] font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
+            <span class="pulse-ring relative inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 text-emerald-500"></span>
+            Active
+          </span>
+        </div>
+
+        <!-- perforation -->
+        <div class="relative border-t border-dashed border-slate-200 dark:border-slate-700">
+          <span class="absolute -left-[21px] -top-2 h-4 w-4 rounded-full border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"></span>
+          <span class="absolute -right-[21px] -top-2 h-4 w-4 rounded-full border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950"></span>
+        </div>
+
+        <!-- body: a real-looking request form -->
+        <div class="space-y-4 px-5 py-5">
+          <div>
+            <label class="font-mono text-[10px] font-medium uppercase tracking-wider text-slate-400">Request type</label>
+            <div class="mt-1.5 flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+              Technical problem
+              <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+          <div>
+            <label class="font-mono text-[10px] font-medium uppercase tracking-wider text-slate-400">Summary</label>
+            <div class="mt-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+              VPN won't connect from home
+            </div>
+          </div>
+          <div class="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-3 py-2 dark:border-slate-700">
+            <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.44 11.05 12 20.5a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            <span class="font-mono text-xs text-slate-500 dark:text-slate-400">vpn-error.png</span>
+            <span class="ml-auto font-mono text-[10px] text-slate-400">48 KB</span>
+          </div>
+          <button type="button" tabindex="-1" class="w-full rounded-lg bg-brand py-2.5 text-sm font-semibold text-white">Submit request</button>
+        </div>
+      </div>
+    </div>
   </div>
 </section>

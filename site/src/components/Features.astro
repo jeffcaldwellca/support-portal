@@ -1,0 +1,66 @@
+---
+import { FEATURES } from '../data/features';
+
+// Per-tile layout: an asymmetric bento (rows of 4+2, 2+4, 3+3 on a 6-col grid)
+// with two colored "anchor" tiles. Order matches the FEATURES data.
+const meta = [
+  { tag: 'forms',  span: 'md:col-span-2 lg:col-span-4', variant: 'brand'  },
+  { tag: 'auth',   span: 'md:col-span-1 lg:col-span-2', variant: 'plain'  },
+  { tag: 'files',  span: 'md:col-span-1 lg:col-span-2', variant: 'plain'  },
+  { tag: 'status', span: 'md:col-span-2 lg:col-span-4', variant: 'dark'   },
+  { tag: 'thread', span: 'md:col-span-1 lg:col-span-3', variant: 'plain'  },
+  { tag: 'brand',  span: 'md:col-span-1 lg:col-span-3', variant: 'plain'  },
+];
+const tiles = FEATURES.map((f, i) => ({ ...f, ...meta[i] }));
+---
+<section id="features" class="mx-auto max-w-6xl px-4 py-20">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <h2 class="max-w-md text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl dark:text-white">
+      Everything a user needs, nothing they don't
+    </h2>
+    <p class="max-w-sm font-mono text-sm text-slate-500 dark:text-slate-400">
+      A focused front door to FreeScout — six pieces that do one job each.
+    </p>
+  </div>
+
+  <div class="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6">
+    {tiles.map((t) => (
+      <article class={`group relative flex flex-col overflow-hidden rounded-2xl p-6 transition ${t.span} ${
+        t.variant === 'brand' ? 'bg-brand text-white' :
+        t.variant === 'dark'  ? 'bg-slate-900 text-white dark:bg-slate-800' :
+        'border border-slate-200 bg-white text-slate-900 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:text-white'
+      }`}>
+        <div class="flex items-center justify-between">
+          <span class={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${
+            t.variant === 'plain' ? 'bg-blue-50 text-brand dark:bg-blue-950/50' : 'bg-white/15 text-white'
+          }`}>
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d={t.icon} />
+            </svg>
+          </span>
+          <span class={`font-mono text-[10px] uppercase tracking-[0.18em] ${t.variant === 'plain' ? 'text-slate-400' : 'text-white/60'}`}>{t.tag}</span>
+        </div>
+
+        <h3 class="mt-5 text-lg font-semibold">{t.title}</h3>
+        <p class={`mt-1.5 text-sm leading-relaxed ${t.variant === 'plain' ? 'text-slate-600 dark:text-slate-400' : 'text-white/80'}`}>{t.blurb}</p>
+
+        {t.variant === 'brand' && (
+          <div class="mt-auto space-y-2 pt-6">
+            <div class="h-2.5 w-3/4 rounded-full bg-white/25"></div>
+            <div class="h-2.5 w-1/2 rounded-full bg-white/20"></div>
+            <div class="mt-3 inline-flex items-center gap-2 rounded-lg bg-white/15 px-3 py-1.5 font-mono text-xs">
+              <span class="h-1.5 w-1.5 rounded-full bg-white"></span> conditional fields
+            </div>
+          </div>
+        )}
+        {t.variant === 'dark' && (
+          <div class="mt-auto flex flex-wrap gap-2 pt-6 font-mono text-[11px]">
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-1 text-emerald-300"><span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Active</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-amber-300"><span class="h-1.5 w-1.5 rounded-full bg-amber-400"></span> Pending</span>
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-slate-300"><span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span> Closed</span>
+          </div>
+        )}
+      </article>
+    ))}
+  </div>
+</section>
