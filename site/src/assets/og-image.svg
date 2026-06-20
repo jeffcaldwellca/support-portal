@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#ffffff"/>
+  <rect width="1200" height="12" fill="#2563eb"/>
+  <text x="80" y="250" font-family="sans-serif" font-size="76" font-weight="800" fill="#111212">Support Portal</text>
+  <text x="80" y="340" font-family="sans-serif" font-size="44" font-weight="600" fill="#2563eb">for FreeScout</text>
+  <text x="80" y="430" font-family="sans-serif" font-size="32" fill="#475569">A friendly, self-hosted customer portal.</text>
+  <text x="80" y="478" font-family="sans-serif" font-size="32" fill="#475569">Dynamic forms · LDAP/local auth · file uploads.</text>
+  <text x="80" y="575" font-family="sans-serif" font-size="26" fill="#94a3b8">Free &amp; open-source · GPL v3 · github.com/jeffcaldwellca/support-portal</text>
+</svg>

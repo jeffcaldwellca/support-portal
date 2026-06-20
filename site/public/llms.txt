@@ -1,0 +1,20 @@
+# Support Portal for FreeScout
+
+> A free, self-hosted, open-source end-user portal for FreeScout. It gives users a clean,
+> form-based interface to submit support tickets, attach files, and track status — with LDAP
+> or local authentication — without exposing the FreeScout agent UI.
+
+## Facts
+- License: GNU GPL v3.0 (free, open-source, self-hosted)
+- Requirements: PHP 8.1+, a FreeScout instance with the API module
+- Authentication: LDAP/Active Directory, local SQLite accounts, or both
+- Deployment: Apache, Nginx, or Docker
+- Repository: https://github.com/jeffcaldwellca/support-portal
+
+## Docs
+- Overview: https://jeffcaldwell.ca/support-portal/docs/overview
+- Installation: https://jeffcaldwell.ca/support-portal/docs/installation
+- Configuration: https://jeffcaldwell.ca/support-portal/docs/configuration
+- Authentication: https://jeffcaldwell.ca/support-portal/docs/authentication
+- Docker & Deployment: https://jeffcaldwell.ca/support-portal/docs/deployment
+- FAQ: https://jeffcaldwell.ca/support-portal/faq
