@@ -1,0 +1,11 @@
+---
+import { FAQ_ITEMS } from '../data/faq';
+---
+<div class="mx-auto max-w-3xl divide-y divide-slate-200 dark:divide-slate-800">
+  {FAQ_ITEMS.map((it) => (
+    <details class="py-5">
+      <summary class="cursor-pointer list-none text-lg font-medium text-slate-900 dark:text-white">{it.q}</summary>
+      <p class="mt-3 text-slate-600 dark:text-slate-400">{it.a}</p>
+    </details>
+  ))}
+</div>

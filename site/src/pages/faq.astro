@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Faq from '../components/Faq.astro';
+import { FAQ_ITEMS } from '../data/faq';
+import { faqPageLd, breadcrumbLd } from '../data/seo';
+
+const jsonLd = [
+  faqPageLd(FAQ_ITEMS.map((it) => ({ q: it.q, a: it.a }))),
+  breadcrumbLd([{ name: 'Home', path: '/' }, { name: 'FAQ', path: '/faq' }]),
+];
+---
+<BaseLayout
+  title="FAQ"
+  description="Answers to common questions about Support Portal for FreeScout: what it is, whether it's free, requirements, LDAP support, Docker, and security."
+  path="/faq"
+  jsonLd={jsonLd}
+>
+  <section class="mx-auto max-w-3xl px-4 py-16">
+    <h1 class="text-center text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">Frequently asked questions</h1>
+    <p class="mx-auto mt-3 max-w-xl text-center text-slate-600 dark:text-slate-400">Everything you need to know about the self-hosted FreeScout customer portal.</p>
+    <div class="mt-10"><Faq /></div>
+  </section>
+</BaseLayout>
