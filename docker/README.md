@@ -138,7 +138,7 @@ docker-compose exec web php bin/manage-local-users.php add <username> <email> <p
 Pre-built images are available on Docker Hub:
 - Repository: `jeffcaldwellca/scout-portal`
 - Latest: `jeffcaldwellca/scout-portal:latest`
-- Specific versions: `jeffcaldwellca/scout-portal:v1.0.0`
+- Specific versions: `jeffcaldwellca/scout-portal:1.0.0`
 
 Pull the latest image:
 ```bash

@@ -38,3 +38,11 @@ tmp/
 # Testing
 tests/
 .phpunit.cache
+
+# Marketing site — deployed separately to GitHub Pages, not part of the app image
+site/
+screenshot.png
+
+# Node dependencies (never used by the PHP runtime)
+node_modules/
+**/node_modules
